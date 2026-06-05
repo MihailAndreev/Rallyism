@@ -1,0 +1,23 @@
+{
+  "name": "rallyism",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "license": "ISC",
+  "author": "Andreev",
+  "type": "commonjs",
+  "main": "index.js",
+  "workspaces": [
+    "rallyism-web",
+    "rallyism-mobile",
+    "rallyism-shared"
+  ],
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "dev": "node scripts/dev-workspaces.mjs",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
