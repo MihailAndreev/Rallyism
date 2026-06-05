@@ -1,5 +1,5 @@
 import { neon } from "@neondatabase/serverless";
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
 import { config } from "dotenv";
 import { and, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/neon-http";
