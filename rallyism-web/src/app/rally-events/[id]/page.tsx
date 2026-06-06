@@ -1,9 +1,17 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
+import { AlbumCard } from "@/components/rally-events/album-card";
+import { EmptyDashboardSection } from "@/components/rally-events/empty-dashboard-section";
+import { MediaPreviewGrid } from "@/components/rally-events/media-preview-grid";
+import { RallyAccessDenied } from "@/components/rally-events/rally-access-denied";
+import { RallyEventHeader } from "@/components/rally-events/rally-event-header";
+import { RallyEventMeta } from "@/components/rally-events/rally-event-meta";
 import { RallyEventStateBadge } from "@/components/rally-events/rally-event-state-badge";
 import { RallyEventStats } from "@/components/rally-events/rally-event-stats";
+import { ShareRallyLinkButton } from "@/components/rally-events/share-rally-link-button";
 import { getCurrentUser } from "@/lib/auth/session";
-import { getRallyEventById } from "@/services/rally-events";
+import { getRallyEventDetails } from "@/services/rally-events";
 
 type RallyEventPageProps = {
   params: Promise<{
@@ -11,128 +19,118 @@ type RallyEventPageProps = {
   }>;
 };
 
-function formatChampionship(championship: "WRC" | "ERC" | "national" | "other") {
-  if (championship === "national") {
-    return "National rally";
-  }
-
-  if (championship === "other") {
-    return "Other";
-  }
-
-  return championship;
-}
-
-function formatDate(value: string | null) {
-  if (!value) {
-    return "Date TBC";
-  }
-
-  return new Intl.DateTimeFormat("en", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(`${value}T00:00:00`));
-}
-
 export default async function RallyEventPage({ params }: RallyEventPageProps) {
+  const { id } = await params;
   const user = await getCurrentUser();
 
   if (!user) {
-    const resolvedParams = await params;
-    redirect(`/login?from=/rally-events/${resolvedParams.id}`);
+    redirect(`/login?from=/rally-events/${id}`);
   }
 
-  const { id } = await params;
   const eventId = Number(id);
 
   if (!Number.isInteger(eventId)) {
     notFound();
   }
 
-  const event = await getRallyEventById(eventId);
+  const result = await getRallyEventDetails(eventId, user);
 
-  if (!event) {
+  if (result.status === "not-found") {
     notFound();
   }
 
-  const location = event.region
-    ? `${event.country} / ${event.region}`
-    : event.country;
-  const endDate = event.endDate ?? event.startDate;
+  if (result.status === "access-denied") {
+    return <RallyAccessDenied />;
+  }
+
+  const { event, albums, mediaPreview } = result;
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-      <article className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm">
-        {event.coverImageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={event.coverImageUrl}
-            alt={`${event.title} cover`}
-            className="h-64 w-full object-cover"
-          />
-        ) : null}
-        <div className="space-y-6 p-6 sm:p-8">
-          <div className="flex flex-wrap gap-2">
-            <RallyEventStateBadge state={event.state} />
-            <span className="rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-semibold capitalize text-zinc-600">
-              {event.visibility}
-            </span>
-          </div>
+    <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+      <div className="flex flex-wrap items-center gap-3">
+        <Link
+          href="/dashboard"
+          className="inline-flex text-sm font-semibold text-red-700 hover:text-red-800"
+        >
+          Back to Dashboard
+        </Link>
+      </div>
 
-          <div>
-            <h1 className="text-4xl font-semibold tracking-normal text-zinc-950">
-              {event.title}
-            </h1>
-            <p className="mt-2 text-lg text-zinc-600">{event.rallyName}</p>
-          </div>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+        <main className="space-y-6">
+          <RallyEventHeader event={event} />
 
-          <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div>
-              <dt className="text-xs font-semibold uppercase text-zinc-500">
-                Championship
-              </dt>
-              <dd className="mt-1 text-sm font-medium text-zinc-800">
-                {formatChampionship(event.championship)}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs font-semibold uppercase text-zinc-500">
-                Season
-              </dt>
-              <dd className="mt-1 text-sm font-medium text-zinc-800">
-                {event.seasonYear}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs font-semibold uppercase text-zinc-500">
-                Location
-              </dt>
-              <dd className="mt-1 text-sm font-medium text-zinc-800">
-                {location}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs font-semibold uppercase text-zinc-500">
-                Dates
-              </dt>
-              <dd className="mt-1 text-sm font-medium text-zinc-800">
-                {formatDate(event.startDate)} - {formatDate(endDate)}
-              </dd>
-            </div>
-          </dl>
+          <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
+            <h2 className="text-2xl font-semibold tracking-normal text-zinc-950">
+              Rally information
+            </h2>
+            {event.description ? (
+              <p className="mt-4 text-base leading-7 text-zinc-600">
+                {event.description}
+              </p>
+            ) : (
+              <p className="mt-4 text-base leading-7 text-zinc-500">
+                No description has been added for this rally event yet.
+              </p>
+            )}
+          </section>
 
-          <RallyEventStats
-            albumsCount={event.albumsCount}
-            photosCount={event.photosCount}
-            videosCount={event.videosCount}
-          />
+          <section className="space-y-4">
+            <div>
+              <h2 className="text-2xl font-semibold tracking-normal text-zinc-950">
+                Albums
+              </h2>
+              <p className="mt-2 text-sm text-zinc-500">
+                Albums are ordered by manual sort order and album date.
+              </p>
+            </div>
+            {albums.length > 0 ? (
+              <div className="grid gap-5 md:grid-cols-2">
+                {albums.map((album) => (
+                  <AlbumCard key={album.id} album={album} />
+                ))}
+              </div>
+            ) : (
+              <EmptyDashboardSection
+                title="No albums have been added to this rally event yet."
+                description="Albums and rally memories will appear here."
+              />
+            )}
+          </section>
 
-          <p className="rounded-md border border-zinc-200 bg-zinc-50 p-4 text-sm leading-6 text-zinc-600">
-            Rally event details will be implemented in the next step.
-          </p>
-        </div>
-      </article>
+          <MediaPreviewGrid items={mediaPreview} />
+        </main>
+
+        <aside className="space-y-5 lg:sticky lg:top-6">
+          <section className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
+            <div className="flex flex-wrap gap-2">
+              <RallyEventStateBadge state={event.state} />
+              <span className="rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-semibold capitalize text-zinc-600">
+                {event.visibility}
+              </span>
+            </div>
+            <div className="mt-5">
+              <RallyEventStats
+                albumsCount={event.albumsCount}
+                mediaCount={event.mediaCount}
+                photosCount={event.photosCount}
+                videosCount={event.videosCount}
+              />
+            </div>
+          </section>
+
+          <section className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
+            <h2 className="text-lg font-semibold text-zinc-950">Summary</h2>
+            <div className="mt-5">
+              <RallyEventMeta event={event} />
+            </div>
+          </section>
+
+          <section className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
+            <ShareRallyLinkButton />
+          </section>
+        </aside>
+      </div>
     </div>
   );
 }

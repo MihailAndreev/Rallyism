@@ -95,6 +95,7 @@ export function RallyEventCard({
 
         <RallyEventStats
           albumsCount={event.albumsCount}
+          mediaCount={event.mediaCount}
           photosCount={event.photosCount}
           videosCount={event.videosCount}
         />

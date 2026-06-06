@@ -2,20 +2,20 @@ import type { RallyEventSummaryCounts } from "@/services/rally-events";
 
 export function RallyEventStats({
   albumsCount,
+  mediaCount,
   photosCount,
   videosCount,
-}: Pick<
-  RallyEventSummaryCounts,
-  "albumsCount" | "photosCount" | "videosCount"
->) {
+  showAlbums = true,
+}: RallyEventSummaryCounts & { showAlbums?: boolean }) {
   const stats = [
-    { label: "Albums", value: albumsCount },
+    ...(showAlbums ? [{ label: "Albums", value: albumsCount }] : []),
+    { label: "Media", value: mediaCount },
     { label: "Photos", value: photosCount },
     { label: "Videos", value: videosCount },
   ];
 
   return (
-    <div className="grid grid-cols-3 gap-2">
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
       {stats.map((stat) => (
         <div
           key={stat.label}
