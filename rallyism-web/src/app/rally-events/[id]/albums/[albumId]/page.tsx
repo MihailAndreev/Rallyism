@@ -9,6 +9,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import {
   getAlbumMediaGalleryDetails,
   userCanManageEvent,
+  userCanManageVideo,
   type AlbumMediaFilter,
   type AlbumMediaItem,
 } from "@/services/rally-events";
@@ -126,7 +127,15 @@ function PhotoCard({
   );
 }
 
-function VideoCard({ item }: { item: AlbumMediaItem }) {
+function VideoCard({
+  canManage,
+  item,
+  rallyEventId,
+}: {
+  canManage: boolean;
+  item: AlbumMediaItem;
+  rallyEventId: number;
+}) {
   const content = (
     <>
       <div className="aspect-[4/3] w-full bg-zinc-100">
@@ -159,36 +168,48 @@ function VideoCard({ item }: { item: AlbumMediaItem }) {
     </>
   );
 
-  if (!item.youtubeUrl) {
-    return (
-      <article className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm">
-        {content}
-      </article>
-    );
-  }
-
   return (
-    <a
-      href={item.youtubeUrl}
-      target="_blank"
-      rel="noreferrer"
-      className="group block overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-red-200 hover:shadow-md"
-    >
-      {content}
-      <span className="sr-only">Open video on YouTube</span>
-    </a>
+    <article className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-red-200 hover:shadow-md">
+      {item.youtubeUrl ? (
+        <a
+          href={item.youtubeUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="group block"
+        >
+          {content}
+          <span className="sr-only">Open video on YouTube</span>
+        </a>
+      ) : (
+        content
+      )}
+      {canManage ? (
+        <div className="border-t border-zinc-200 px-4 py-3">
+          <Link
+            href={`/rally-events/${rallyEventId}/albums/${item.albumId}/videos/${item.id}/edit`}
+            className="inline-flex text-sm font-semibold text-red-700 hover:text-red-800"
+          >
+            Edit
+          </Link>
+        </div>
+      ) : null}
+    </article>
   );
 }
 
 function MediaCard({
+  canManage,
   item,
   href,
+  rallyEventId,
 }: {
+  canManage: boolean;
   item: AlbumMediaItem;
   href: string;
+  rallyEventId: number;
 }) {
   return item.type === "video" ? (
-    <VideoCard item={item} />
+    <VideoCard canManage={canManage} item={item} rallyEventId={rallyEventId} />
   ) : (
     <PhotoCard item={item} href={href} />
   );
@@ -289,12 +310,20 @@ export default async function AlbumPage({
             showAlbums={false}
           />
           {canManageEvent ? (
-            <Link
-              href={`/rally-events/${rallyEventId}/albums/${parsedAlbumId}/edit`}
-              className="inline-flex h-10 items-center justify-center rounded-md border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-900 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-100"
-            >
-              Edit album
-            </Link>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href={`/rally-events/${rallyEventId}/albums/${parsedAlbumId}/videos/new`}
+                className="inline-flex h-10 items-center justify-center rounded-md bg-red-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700"
+              >
+                Add YouTube video
+              </Link>
+              <Link
+                href={`/rally-events/${rallyEventId}/albums/${parsedAlbumId}/edit`}
+                className="inline-flex h-10 items-center justify-center rounded-md border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-900 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-100"
+              >
+                Edit album
+              </Link>
+            </div>
           ) : null}
         </div>
       </section>
@@ -347,6 +376,7 @@ export default async function AlbumPage({
             {mediaPage.items.map((item) => (
               <MediaCard
                 key={item.id}
+                canManage={userCanManageVideo(event, item, user)}
                 item={item}
                 href={getAlbumPageHref({
                   rallyEventId,
@@ -355,6 +385,7 @@ export default async function AlbumPage({
                   page: mediaPage.currentPage,
                   photoId: item.id,
                 })}
+                rallyEventId={rallyEventId}
               />
             ))}
           </div>

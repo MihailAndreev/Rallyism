@@ -77,13 +77,45 @@ export type RallyEventMediaPreviewItem = {
   youtubeUrl: string | null;
 };
 
+export type VideoFormInput = {
+  youtubeUrl: string;
+  title: string;
+  caption: string;
+  sortOrder: string;
+};
+
+export type VideoFormValues = {
+  youtubeUrl: string;
+  youtubeVideoId: string;
+  youtubeThumbnailUrl: string;
+  title: string;
+  caption: string | null;
+  sortOrder: number;
+};
+
 export type AlbumMediaFilter = "all" | "photos" | "videos";
 
 export type AlbumMediaItem = RallyEventMediaPreviewItem & {
   dateTaken: Date | null;
   location: string | null;
   sortOrder: number;
+  createdById: number | null;
   createdAt: Date;
+};
+
+export type EditableVideoItem = {
+  id: number;
+  albumId: number;
+  rallyEventId: number;
+  title: string | null;
+  caption: string | null;
+  sortOrder: number;
+  createdById: number | null;
+  youtubeUrl: string | null;
+  youtubeVideoId: string | null;
+  youtubeThumbnailUrl: string | null;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 export type RallyEventDetailsResult =
@@ -171,6 +203,13 @@ export class AlbumValidationError extends Error {
   }
 }
 
+export class VideoValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "VideoValidationError";
+  }
+}
+
 export type EditableRallyEventResult =
   | { status: "not-found" }
   | { status: "access-denied" }
@@ -183,6 +222,16 @@ export type EditableAlbumResult =
       status: "allowed";
       event: RallyEventSummary;
       album: RallyEventAlbum;
+    };
+
+export type EditableVideoResult =
+  | { status: "not-found" }
+  | { status: "access-denied" }
+  | {
+      status: "allowed";
+      event: RallyEventSummary;
+      album: RallyEventAlbum;
+      video: EditableVideoItem;
     };
 
 const validChampionships = ["WRC", "ERC", "national", "other"] as const;
@@ -361,6 +410,71 @@ export function validateAlbumInput(input: AlbumFormInput): AlbumFormValues {
     description: normalizeNullableText(input.description),
     albumDate: normalizeOptionalDate(input.albumDate),
     coverImageUrl: normalizeNullableText(input.coverImageUrl),
+    sortOrder,
+  };
+}
+
+export function getYoutubeThumbnailUrl(videoId: string) {
+  return `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+}
+
+export function extractYoutubeVideoId(value: string) {
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    throw new VideoValidationError("YouTube URL is required.");
+  }
+
+  let url: URL;
+
+  try {
+    url = new URL(trimmed);
+  } catch {
+    throw new VideoValidationError("Enter a valid YouTube URL.");
+  }
+
+  const hostname = url.hostname.replace(/^www\./, "").toLowerCase();
+  let videoId: string | null = null;
+
+  if (hostname === "youtu.be") {
+    videoId = url.pathname.split("/").filter(Boolean)[0] ?? null;
+  }
+
+  if (hostname === "youtube.com" || hostname.endsWith(".youtube.com")) {
+    if (url.pathname === "/watch") {
+      videoId = url.searchParams.get("v");
+    } else {
+      const [prefix, id] = url.pathname.split("/").filter(Boolean);
+
+      if (prefix === "shorts" || prefix === "embed") {
+        videoId = id ?? null;
+      }
+    }
+  }
+
+  if (!videoId || !/^[A-Za-z0-9_-]{6,32}$/.test(videoId)) {
+    throw new VideoValidationError("Enter a valid YouTube video URL.");
+  }
+
+  return videoId;
+}
+
+export function validateVideoInput(input: VideoFormInput): VideoFormValues {
+  const youtubeVideoId = extractYoutubeVideoId(input.youtubeUrl);
+  const title = input.title.trim() || "YouTube video";
+  const sortOrderText = input.sortOrder.trim();
+  const sortOrder = sortOrderText ? Number(sortOrderText) : 0;
+
+  if (!Number.isInteger(sortOrder)) {
+    throw new VideoValidationError("Sort order must be a whole number.");
+  }
+
+  return {
+    youtubeUrl: `https://www.youtube.com/watch?v=${youtubeVideoId}`,
+    youtubeVideoId,
+    youtubeThumbnailUrl: getYoutubeThumbnailUrl(youtubeVideoId),
+    title,
+    caption: normalizeNullableText(input.caption),
     sortOrder,
   };
 }
@@ -592,6 +706,7 @@ async function getAlbumMediaPage(input: {
       dateTaken: mediaItems.dateTaken,
       location: mediaItems.location,
       sortOrder: mediaItems.sortOrder,
+      createdById: mediaItems.createdById,
       createdAt: mediaItems.createdAt,
     })
     .from(mediaItems)
@@ -1000,6 +1115,190 @@ export async function updateAlbum(input: {
     .returning();
 
   return { status: "allowed" as const, album };
+}
+
+export function userCanManageVideo(
+  event: { createdById: number | null },
+  video: { createdById: number | null },
+  currentUser: AuthUser | null,
+) {
+  if (userCanManageEvent(event, currentUser)) {
+    return true;
+  }
+
+  return canContribute(currentUser) && video.createdById === currentUser?.id;
+}
+
+export async function createVideo(input: {
+  rallyEventId: number;
+  albumId: number;
+  currentUser: AuthUser;
+  values: VideoFormValues;
+}) {
+  if (!canContribute(input.currentUser)) {
+    throw new VideoValidationError("Your account is not approved to add videos.");
+  }
+
+  const albumAccess = await getEditableAlbum({
+    rallyEventId: input.rallyEventId,
+    albumId: input.albumId,
+    currentUser: input.currentUser,
+  });
+
+  if (albumAccess.status !== "allowed") {
+    return albumAccess;
+  }
+
+  const [video] = await db
+    .insert(mediaItems)
+    .values({
+      albumId: input.albumId,
+      rallyEventId: input.rallyEventId,
+      type: "video",
+      title: input.values.title,
+      caption: input.values.caption,
+      sortOrder: input.values.sortOrder,
+      createdById: input.currentUser.id,
+      youtubeUrl: input.values.youtubeUrl,
+      youtubeVideoId: input.values.youtubeVideoId,
+      youtubeThumbnailUrl: input.values.youtubeThumbnailUrl,
+      updatedAt: new Date(),
+    })
+    .returning();
+
+  return { status: "allowed" as const, video };
+}
+
+export async function getEditableVideo(input: {
+  rallyEventId: number;
+  albumId: number;
+  mediaId: number;
+  currentUser: AuthUser | null;
+}): Promise<EditableVideoResult> {
+  const albumAccess = await getAlbumMediaGalleryDetails({
+    rallyEventId: input.rallyEventId,
+    albumId: input.albumId,
+    currentUser: input.currentUser,
+    pageSize: 1,
+  });
+
+  if (albumAccess.status !== "allowed") {
+    return albumAccess;
+  }
+
+  const [video] = await db
+    .select({
+      id: mediaItems.id,
+      albumId: mediaItems.albumId,
+      rallyEventId: mediaItems.rallyEventId,
+      title: mediaItems.title,
+      caption: mediaItems.caption,
+      sortOrder: mediaItems.sortOrder,
+      createdById: mediaItems.createdById,
+      youtubeUrl: mediaItems.youtubeUrl,
+      youtubeVideoId: mediaItems.youtubeVideoId,
+      youtubeThumbnailUrl: mediaItems.youtubeThumbnailUrl,
+      createdAt: mediaItems.createdAt,
+      updatedAt: mediaItems.updatedAt,
+    })
+    .from(mediaItems)
+    .where(
+      and(
+        eq(mediaItems.id, input.mediaId),
+        eq(mediaItems.albumId, input.albumId),
+        eq(mediaItems.rallyEventId, input.rallyEventId),
+        eq(mediaItems.type, "video"),
+      ),
+    )
+    .limit(1);
+
+  if (!video) {
+    return { status: "not-found" };
+  }
+
+  if (!userCanManageVideo(albumAccess.event, video, input.currentUser)) {
+    return { status: "access-denied" };
+  }
+
+  return {
+    status: "allowed",
+    event: albumAccess.event,
+    album: albumAccess.album,
+    video,
+  };
+}
+
+export async function updateVideo(input: {
+  rallyEventId: number;
+  albumId: number;
+  mediaId: number;
+  currentUser: AuthUser;
+  values: VideoFormValues;
+}) {
+  const access = await getEditableVideo({
+    rallyEventId: input.rallyEventId,
+    albumId: input.albumId,
+    mediaId: input.mediaId,
+    currentUser: input.currentUser,
+  });
+
+  if (access.status !== "allowed") {
+    return access;
+  }
+
+  const [video] = await db
+    .update(mediaItems)
+    .set({
+      title: input.values.title,
+      caption: input.values.caption,
+      sortOrder: input.values.sortOrder,
+      youtubeUrl: input.values.youtubeUrl,
+      youtubeVideoId: input.values.youtubeVideoId,
+      youtubeThumbnailUrl: input.values.youtubeThumbnailUrl,
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(mediaItems.id, input.mediaId),
+        eq(mediaItems.albumId, input.albumId),
+        eq(mediaItems.rallyEventId, input.rallyEventId),
+        eq(mediaItems.type, "video"),
+      ),
+    )
+    .returning();
+
+  return { status: "allowed" as const, video };
+}
+
+export async function deleteVideo(input: {
+  rallyEventId: number;
+  albumId: number;
+  mediaId: number;
+  currentUser: AuthUser;
+}) {
+  const access = await getEditableVideo({
+    rallyEventId: input.rallyEventId,
+    albumId: input.albumId,
+    mediaId: input.mediaId,
+    currentUser: input.currentUser,
+  });
+
+  if (access.status !== "allowed") {
+    return access;
+  }
+
+  await db
+    .delete(mediaItems)
+    .where(
+      and(
+        eq(mediaItems.id, input.mediaId),
+        eq(mediaItems.albumId, input.albumId),
+        eq(mediaItems.rallyEventId, input.rallyEventId),
+        eq(mediaItems.type, "video"),
+      ),
+    );
+
+  return { status: "allowed" as const };
 }
 
 export async function getRallyEventById(id: number) {
