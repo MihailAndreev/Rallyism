@@ -58,6 +58,15 @@ export type RallyEventMediaPreviewItem = {
   youtubeUrl: string | null;
 };
 
+export type AlbumMediaFilter = "all" | "photos" | "videos";
+
+export type AlbumMediaItem = RallyEventMediaPreviewItem & {
+  dateTaken: Date | null;
+  location: string | null;
+  sortOrder: number;
+  createdAt: Date;
+};
+
 export type RallyEventDetailsResult =
   | { status: "not-found" }
   | { status: "access-denied" }
@@ -77,6 +86,27 @@ export type PublicRallyEventsPage = {
   hasPreviousPage: boolean;
   hasNextPage: boolean;
 };
+
+export type AlbumMediaPage = {
+  items: AlbumMediaItem[];
+  filter: AlbumMediaFilter;
+  currentPage: number;
+  pageSize: number;
+  totalMedia: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+};
+
+export type AlbumMediaGalleryDetailsResult =
+  | { status: "not-found" }
+  | { status: "access-denied" }
+  | {
+      status: "allowed";
+      event: RallyEventSummary;
+      album: RallyEventAlbum;
+      mediaPage: AlbumMediaPage;
+    };
 
 function toDateOnly(value: Date) {
   return new Date(value.getFullYear(), value.getMonth(), value.getDate());
@@ -268,6 +298,105 @@ async function getAlbumCountsByAlbum(rallyEventId: number) {
       }),
     ]),
   );
+}
+
+async function getSingleAlbumMediaCounts(albumId: number) {
+  const [row] = await db
+    .select({
+      mediaCount: sql<number>`count(${mediaItems.id})::int`,
+      photosCount: sql<number>`(count(${mediaItems.id}) filter (where ${mediaItems.type} = 'photo'))::int`,
+      videosCount: sql<number>`(count(${mediaItems.id}) filter (where ${mediaItems.type} = 'video'))::int`,
+    })
+    .from(mediaItems)
+    .where(eq(mediaItems.albumId, albumId));
+
+  return normalizeCounts({
+    albumsCount: 0,
+    mediaCount: row?.mediaCount,
+    photosCount: row?.photosCount,
+    videosCount: row?.videosCount,
+  });
+}
+
+function getMediaTypeForFilter(filter: AlbumMediaFilter) {
+  if (filter === "photos") {
+    return "photo";
+  }
+
+  if (filter === "videos") {
+    return "video";
+  }
+
+  return null;
+}
+
+async function getAlbumMediaPage(input: {
+  rallyEventId: number;
+  albumId: number;
+  filter?: AlbumMediaFilter;
+  page?: number;
+  pageSize?: number;
+}): Promise<AlbumMediaPage> {
+  const filter = input.filter ?? "all";
+  const pageSize = input.pageSize ?? 12;
+  const requestedPage =
+    input.page && Number.isInteger(input.page) && input.page > 0 ? input.page : 1;
+  const mediaType = getMediaTypeForFilter(filter);
+  const whereClause = mediaType
+    ? and(
+        eq(mediaItems.rallyEventId, input.rallyEventId),
+        eq(mediaItems.albumId, input.albumId),
+        eq(mediaItems.type, mediaType),
+      )
+    : and(
+        eq(mediaItems.rallyEventId, input.rallyEventId),
+        eq(mediaItems.albumId, input.albumId),
+      );
+
+  const [{ totalMedia }] = await db
+    .select({
+      totalMedia: sql<number>`count(${mediaItems.id})::int`,
+    })
+    .from(mediaItems)
+    .where(whereClause);
+
+  const totalPages = Math.max(1, Math.ceil((totalMedia ?? 0) / pageSize));
+  const currentPage = Math.min(requestedPage, totalPages);
+  const offset = (currentPage - 1) * pageSize;
+
+  const items = await db
+    .select({
+      id: mediaItems.id,
+      albumId: mediaItems.albumId,
+      type: mediaItems.type,
+      title: mediaItems.title,
+      caption: mediaItems.caption,
+      thumbnailImageUrl: mediaItems.thumbnailImageUrl,
+      displayImageUrl: mediaItems.displayImageUrl,
+      originalImageUrl: mediaItems.originalImageUrl,
+      youtubeThumbnailUrl: mediaItems.youtubeThumbnailUrl,
+      youtubeUrl: mediaItems.youtubeUrl,
+      dateTaken: mediaItems.dateTaken,
+      location: mediaItems.location,
+      sortOrder: mediaItems.sortOrder,
+      createdAt: mediaItems.createdAt,
+    })
+    .from(mediaItems)
+    .where(whereClause)
+    .orderBy(asc(mediaItems.sortOrder), asc(mediaItems.dateTaken), asc(mediaItems.createdAt))
+    .limit(pageSize)
+    .offset(offset);
+
+  return {
+    items,
+    filter,
+    currentPage,
+    pageSize,
+    totalMedia: totalMedia ?? 0,
+    totalPages,
+    hasPreviousPage: currentPage > 1,
+    hasNextPage: currentPage < totalPages,
+  };
 }
 
 export async function getDashboardRallyEvents() {
@@ -512,5 +641,64 @@ export async function getAlbumPlaceholderDetails(input: {
     status: "allowed" as const,
     event: access.event,
     album,
+  };
+}
+
+export async function getAlbumMediaGalleryDetails(input: {
+  rallyEventId: number;
+  albumId: number;
+  currentUser: AuthUser | null;
+  filter?: AlbumMediaFilter;
+  page?: number;
+  pageSize?: number;
+}): Promise<AlbumMediaGalleryDetailsResult> {
+  const access = await getRallyEventAccess(input.rallyEventId, input.currentUser);
+
+  if (access.status !== "allowed") {
+    return access;
+  }
+
+  const [album] = await db
+    .select()
+    .from(albums)
+    .where(
+      and(
+        eq(albums.id, input.albumId),
+        eq(albums.rallyEventId, input.rallyEventId),
+      ),
+    )
+    .limit(1);
+
+  if (!album) {
+    return { status: "not-found" };
+  }
+
+  const [eventCounts, albumCounts, mediaPage] = await Promise.all([
+    getRallyEventSummaryCounts(input.rallyEventId),
+    getSingleAlbumMediaCounts(input.albumId),
+    getAlbumMediaPage({
+      rallyEventId: input.rallyEventId,
+      albumId: input.albumId,
+      filter: input.filter,
+      page: input.page,
+      pageSize: input.pageSize,
+    }),
+  ]);
+
+  return {
+    status: "allowed",
+    event: toRallyEventSummary(access.event, eventCounts, null),
+    album: {
+      id: album.id,
+      rallyEventId: album.rallyEventId,
+      title: album.title,
+      description: album.description,
+      albumDate: album.albumDate,
+      coverImageUrl: album.coverImageUrl,
+      sortOrder: album.sortOrder,
+      createdAt: album.createdAt,
+      ...albumCounts,
+    },
+    mediaPage,
   };
 }
