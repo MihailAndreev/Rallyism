@@ -9,6 +9,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import {
   getAlbumMediaGalleryDetails,
   userCanManageEvent,
+  userCanManagePhoto,
   userCanManageVideo,
   type AlbumMediaFilter,
   type AlbumMediaItem,
@@ -122,48 +123,60 @@ function getUploadResultMessage(searchParams: Awaited<AlbumPageProps["searchPara
 }
 
 function PhotoCard({
+  canManage,
   item,
   href,
+  rallyEventId,
 }: {
+  canManage: boolean;
   item: AlbumMediaItem;
   href: string;
+  rallyEventId: number;
 }) {
   const imageUrl = getPhotoImageUrl(item);
 
   return (
-    <Link
-      href={href}
-      scroll={false}
-      className="group block overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-red-200 hover:shadow-md"
-    >
-      <div className="aspect-[4/3] w-full bg-zinc-100">
-        {imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={imageUrl}
-            alt={getMediaTitle(item)}
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center px-4 text-center text-sm font-semibold text-zinc-500">
+    <article className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-red-200 hover:shadow-md">
+      <Link href={href} scroll={false} className="group block">
+        <div className="aspect-[4/3] w-full bg-zinc-100">
+          {imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={imageUrl}
+              alt={getMediaTitle(item)}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center px-4 text-center text-sm font-semibold text-zinc-500">
+              Photo
+            </div>
+          )}
+        </div>
+        <div className="min-w-0 space-y-2 p-4">
+          <span className="inline-flex rounded-md border border-zinc-200 bg-zinc-50 px-2 py-1 text-xs font-semibold text-zinc-600">
             Photo
-          </div>
-        )}
-      </div>
-      <div className="min-w-0 space-y-2 p-4">
-        <span className="inline-flex rounded-md border border-zinc-200 bg-zinc-50 px-2 py-1 text-xs font-semibold text-zinc-600">
-          Photo
-        </span>
-        <h2 className="line-clamp-2 break-words text-base font-semibold text-zinc-950">
-          {getMediaTitle(item)}
-        </h2>
-        {item.caption ? (
-          <p className="line-clamp-3 break-words text-sm leading-6 text-zinc-600">
-            {item.caption}
-          </p>
-        ) : null}
-      </div>
-    </Link>
+          </span>
+          <h2 className="line-clamp-2 break-words text-base font-semibold text-zinc-950">
+            {getMediaTitle(item)}
+          </h2>
+          {item.caption ? (
+            <p className="line-clamp-3 break-words text-sm leading-6 text-zinc-600">
+              {item.caption}
+            </p>
+          ) : null}
+        </div>
+      </Link>
+      {canManage ? (
+        <div className="border-t border-zinc-200 px-4 py-3">
+          <Link
+            href={`/rally-events/${rallyEventId}/albums/${item.albumId}/photos/${item.id}/edit`}
+            className="inline-flex text-sm font-semibold text-red-700 hover:text-red-800"
+          >
+            Edit
+          </Link>
+        </div>
+      ) : null}
+    </article>
   );
 }
 
@@ -251,7 +264,12 @@ function MediaCard({
   return item.type === "video" ? (
     <VideoCard canManage={canManage} item={item} rallyEventId={rallyEventId} />
   ) : (
-    <PhotoCard item={item} href={href} />
+    <PhotoCard
+      canManage={canManage}
+      item={item}
+      href={href}
+      rallyEventId={rallyEventId}
+    />
   );
 }
 
@@ -437,7 +455,11 @@ export default async function AlbumPage({
             {mediaPage.items.map((item) => (
               <MediaCard
                 key={item.id}
-                canManage={userCanManageVideo(event, item, user)}
+                canManage={
+                  item.type === "video"
+                    ? userCanManageVideo(event, item, user)
+                    : userCanManagePhoto(event, item, user)
+                }
                 item={item}
                 href={getAlbumPageHref({
                   rallyEventId,

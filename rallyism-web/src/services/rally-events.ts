@@ -3,6 +3,7 @@ import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { albums, mediaItems, rallyEvents, users } from "@/db/schema";
 import { canContribute, isAdmin } from "@/lib/auth/authorization";
+import { deleteR2Object } from "@/lib/storage/r2";
 import type { AuthUser } from "@/services/users";
 
 export type RallyEventState = "upcoming" | "current" | "past";
@@ -93,6 +94,22 @@ export type VideoFormValues = {
   sortOrder: number;
 };
 
+export type PhotoFormInput = {
+  title: string;
+  caption: string;
+  location: string;
+  dateTaken: string;
+  sortOrder: string;
+};
+
+export type PhotoFormValues = {
+  title: string | null;
+  caption: string | null;
+  location: string | null;
+  dateTaken: Date | null;
+  sortOrder: number;
+};
+
 export type AlbumMediaFilter = "all" | "photos" | "videos";
 
 export type AlbumMediaItem = RallyEventMediaPreviewItem & {
@@ -114,6 +131,27 @@ export type EditableVideoItem = {
   youtubeUrl: string | null;
   youtubeVideoId: string | null;
   youtubeThumbnailUrl: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type EditablePhotoItem = {
+  id: number;
+  albumId: number;
+  rallyEventId: number;
+  title: string | null;
+  caption: string | null;
+  location: string | null;
+  dateTaken: Date | null;
+  sortOrder: number;
+  createdById: number | null;
+  thumbnailImageUrl: string | null;
+  displayImageUrl: string | null;
+  originalImageUrl: string | null;
+  thumbnailImageR2Key: string | null;
+  displayImageR2Key: string | null;
+  originalImageR2Key: string | null;
+  originalFilename: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -210,6 +248,20 @@ export class VideoValidationError extends Error {
   }
 }
 
+export class PhotoValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PhotoValidationError";
+  }
+}
+
+export class PhotoStorageDeleteError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PhotoStorageDeleteError";
+  }
+}
+
 export type EditableRallyEventResult =
   | { status: "not-found" }
   | { status: "access-denied" }
@@ -232,6 +284,16 @@ export type EditableVideoResult =
       event: RallyEventSummary;
       album: RallyEventAlbum;
       video: EditableVideoItem;
+    };
+
+export type EditablePhotoResult =
+  | { status: "not-found" }
+  | { status: "access-denied" }
+  | {
+      status: "allowed";
+      event: RallyEventSummary;
+      album: RallyEventAlbum;
+      photo: EditablePhotoItem;
     };
 
 const validChampionships = ["WRC", "ERC", "national", "other"] as const;
@@ -475,6 +537,48 @@ export function validateVideoInput(input: VideoFormInput): VideoFormValues {
     youtubeThumbnailUrl: getYoutubeThumbnailUrl(youtubeVideoId),
     title,
     caption: normalizeNullableText(input.caption),
+    sortOrder,
+  };
+}
+
+function parseOptionalDateTime(value: string) {
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return null;
+  }
+
+  const date = new Date(trimmed);
+
+  if (Number.isNaN(date.getTime())) {
+    throw new PhotoValidationError("Enter a valid date taken.");
+  }
+
+  return date;
+}
+
+export function validatePhotoInput(input: PhotoFormInput): PhotoFormValues {
+  const title = normalizeNullableText(input.title);
+  const sortOrderText = input.sortOrder.trim();
+  const sortOrder = sortOrderText ? Number(sortOrderText) : 0;
+
+  if (title && title.length > 180) {
+    throw new PhotoValidationError("Photo title must be 180 characters or fewer.");
+  }
+
+  if (input.location.trim().length > 180) {
+    throw new PhotoValidationError("Location must be 180 characters or fewer.");
+  }
+
+  if (!Number.isInteger(sortOrder)) {
+    throw new PhotoValidationError("Sort order must be a whole number.");
+  }
+
+  return {
+    title,
+    caption: normalizeNullableText(input.caption),
+    location: normalizeNullableText(input.location),
+    dateTaken: parseOptionalDateTime(input.dateTaken),
     sortOrder,
   };
 }
@@ -1295,6 +1399,179 @@ export async function deleteVideo(input: {
         eq(mediaItems.albumId, input.albumId),
         eq(mediaItems.rallyEventId, input.rallyEventId),
         eq(mediaItems.type, "video"),
+      ),
+    );
+
+  return { status: "allowed" as const };
+}
+
+export function userCanManagePhoto(
+  event: { createdById: number | null },
+  photo: { createdById: number | null },
+  currentUser: AuthUser | null,
+) {
+  if (userCanManageEvent(event, currentUser)) {
+    return true;
+  }
+
+  return canContribute(currentUser) && photo.createdById === currentUser?.id;
+}
+
+export async function getEditablePhoto(input: {
+  rallyEventId: number;
+  albumId: number;
+  mediaId: number;
+  currentUser: AuthUser | null;
+}): Promise<EditablePhotoResult> {
+  const albumAccess = await getAlbumMediaGalleryDetails({
+    rallyEventId: input.rallyEventId,
+    albumId: input.albumId,
+    currentUser: input.currentUser,
+    pageSize: 1,
+  });
+
+  if (albumAccess.status !== "allowed") {
+    return albumAccess;
+  }
+
+  const [photo] = await db
+    .select({
+      id: mediaItems.id,
+      albumId: mediaItems.albumId,
+      rallyEventId: mediaItems.rallyEventId,
+      title: mediaItems.title,
+      caption: mediaItems.caption,
+      location: mediaItems.location,
+      dateTaken: mediaItems.dateTaken,
+      sortOrder: mediaItems.sortOrder,
+      createdById: mediaItems.createdById,
+      thumbnailImageUrl: mediaItems.thumbnailImageUrl,
+      displayImageUrl: mediaItems.displayImageUrl,
+      originalImageUrl: mediaItems.originalImageUrl,
+      thumbnailImageR2Key: mediaItems.thumbnailImageR2Key,
+      displayImageR2Key: mediaItems.displayImageR2Key,
+      originalImageR2Key: mediaItems.originalImageR2Key,
+      originalFilename: mediaItems.originalFilename,
+      createdAt: mediaItems.createdAt,
+      updatedAt: mediaItems.updatedAt,
+    })
+    .from(mediaItems)
+    .where(
+      and(
+        eq(mediaItems.id, input.mediaId),
+        eq(mediaItems.albumId, input.albumId),
+        eq(mediaItems.rallyEventId, input.rallyEventId),
+        eq(mediaItems.type, "photo"),
+      ),
+    )
+    .limit(1);
+
+  if (!photo) {
+    return { status: "not-found" };
+  }
+
+  if (!userCanManagePhoto(albumAccess.event, photo, input.currentUser)) {
+    return { status: "access-denied" };
+  }
+
+  return {
+    status: "allowed",
+    event: albumAccess.event,
+    album: albumAccess.album,
+    photo,
+  };
+}
+
+export async function updatePhoto(input: {
+  rallyEventId: number;
+  albumId: number;
+  mediaId: number;
+  currentUser: AuthUser;
+  values: PhotoFormValues;
+}) {
+  if (!canContribute(input.currentUser)) {
+    throw new PhotoValidationError("Your account is not approved to edit photos.");
+  }
+
+  const access = await getEditablePhoto({
+    rallyEventId: input.rallyEventId,
+    albumId: input.albumId,
+    mediaId: input.mediaId,
+    currentUser: input.currentUser,
+  });
+
+  if (access.status !== "allowed") {
+    return access;
+  }
+
+  const [photo] = await db
+    .update(mediaItems)
+    .set({
+      title: input.values.title,
+      caption: input.values.caption,
+      location: input.values.location,
+      dateTaken: input.values.dateTaken,
+      sortOrder: input.values.sortOrder,
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(mediaItems.id, input.mediaId),
+        eq(mediaItems.albumId, input.albumId),
+        eq(mediaItems.rallyEventId, input.rallyEventId),
+        eq(mediaItems.type, "photo"),
+      ),
+    )
+    .returning();
+
+  return { status: "allowed" as const, photo };
+}
+
+function getPhotoR2Keys(photo: EditablePhotoItem) {
+  return [
+    photo.thumbnailImageR2Key,
+    photo.displayImageR2Key,
+    photo.originalImageR2Key,
+  ].filter((key): key is string => Boolean(key));
+}
+
+export async function deletePhoto(input: {
+  rallyEventId: number;
+  albumId: number;
+  mediaId: number;
+  currentUser: AuthUser;
+}) {
+  if (!canContribute(input.currentUser)) {
+    throw new PhotoValidationError("Your account is not approved to delete photos.");
+  }
+
+  const access = await getEditablePhoto({
+    rallyEventId: input.rallyEventId,
+    albumId: input.albumId,
+    mediaId: input.mediaId,
+    currentUser: input.currentUser,
+  });
+
+  if (access.status !== "allowed") {
+    return access;
+  }
+
+  try {
+    await Promise.all(getPhotoR2Keys(access.photo).map(deleteR2Object));
+  } catch {
+    throw new PhotoStorageDeleteError(
+      "The photo files could not be deleted from storage. Try again before removing the photo.",
+    );
+  }
+
+  await db
+    .delete(mediaItems)
+    .where(
+      and(
+        eq(mediaItems.id, input.mediaId),
+        eq(mediaItems.albumId, input.albumId),
+        eq(mediaItems.rallyEventId, input.rallyEventId),
+        eq(mediaItems.type, "photo"),
       ),
     );
 
