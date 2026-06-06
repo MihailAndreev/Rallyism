@@ -22,6 +22,9 @@ type AlbumPageProps = {
   searchParams?: Promise<{
     filter?: string;
     page?: string;
+    uploadStatus?: string;
+    uploaded?: string;
+    failed?: string;
   }>;
 };
 
@@ -79,6 +82,43 @@ function getPhotoImageUrl(item: AlbumMediaItem) {
 
 function getMediaTitle(item: AlbumMediaItem) {
   return item.title ?? (item.type === "video" ? "Untitled video" : "Untitled photo");
+}
+
+function getUploadResultMessage(searchParams: Awaited<AlbumPageProps["searchParams"]>) {
+  const status = searchParams?.uploadStatus;
+
+  if (!status) {
+    return null;
+  }
+
+  const uploaded = Number(searchParams?.uploaded ?? 0);
+  const failed = Number(searchParams?.failed ?? 0);
+  const uploadedText = `${uploaded} photo${uploaded === 1 ? "" : "s"} uploaded`;
+  const failedText =
+    failed > 0 ? `, ${failed} file${failed === 1 ? "" : "s"} failed` : "";
+
+  if (status === "completed") {
+    return {
+      tone: "success" as const,
+      text: `${uploadedText}.`,
+    };
+  }
+
+  if (status === "completed_with_errors") {
+    return {
+      tone: "warning" as const,
+      text: `${uploadedText}${failedText}.`,
+    };
+  }
+
+  if (status === "failed") {
+    return {
+      tone: "error" as const,
+      text: "No photos were uploaded. Check the file format and size, then try again.",
+    };
+  }
+
+  return null;
 }
 
 function PhotoCard({
@@ -258,6 +298,7 @@ export default async function AlbumPage({
 
   const { album, event, mediaPage } = result;
   const canManageEvent = userCanManageEvent(event, user);
+  const uploadResultMessage = getUploadResultMessage(resolvedSearchParams);
   const viewerPhotos = mediaPage.items
     .filter((item) => item.type === "photo")
     .map((item) => ({
@@ -312,8 +353,14 @@ export default async function AlbumPage({
           {canManageEvent ? (
             <div className="flex flex-wrap gap-3">
               <Link
-                href={`/rally-events/${rallyEventId}/albums/${parsedAlbumId}/videos/new`}
+                href={`/rally-events/${rallyEventId}/albums/${parsedAlbumId}/photos/upload`}
                 className="inline-flex h-10 items-center justify-center rounded-md bg-red-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700"
+              >
+                Upload photos
+              </Link>
+              <Link
+                href={`/rally-events/${rallyEventId}/albums/${parsedAlbumId}/videos/new`}
+                className="inline-flex h-10 items-center justify-center rounded-md border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-900 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-100"
               >
                 Add YouTube video
               </Link>
@@ -327,6 +374,20 @@ export default async function AlbumPage({
           ) : null}
         </div>
       </section>
+
+      {uploadResultMessage ? (
+        <div
+          className={`rounded-md border px-4 py-3 text-sm font-medium ${
+            uploadResultMessage.tone === "success"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+              : uploadResultMessage.tone === "warning"
+                ? "border-amber-200 bg-amber-50 text-amber-800"
+                : "border-red-200 bg-red-50 text-red-800"
+          }`}
+        >
+          {uploadResultMessage.text}
+        </div>
+      ) : null}
 
       <section className="space-y-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">

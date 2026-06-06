@@ -15,6 +15,13 @@
       "when": 1780735730905,
       "tag": "0001_majestic_harrier",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780739365210,
+      "tag": "0002_happy_ronan",
+      "breakpoints": true
     }
   ]
 }

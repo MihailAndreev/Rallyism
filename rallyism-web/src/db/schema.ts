@@ -33,6 +33,22 @@ export const visibilityEnum = pgEnum("visibility", [
   "unlisted",
 ]);
 export const mediaTypeEnum = pgEnum("media_type", ["photo", "video"]);
+export const uploadBatchStatusEnum = pgEnum("upload_batch_status", [
+  "created",
+  "uploading",
+  "uploaded",
+  "processing",
+  "completed",
+  "completed_with_errors",
+  "failed",
+]);
+export const mediaStatusEnum = pgEnum("media_status", [
+  "pending_upload",
+  "uploaded",
+  "processing",
+  "ready",
+  "failed",
+]);
 
 // App users. Regular users can view allowed memories; admins manage content and users.
 export const users = pgTable(
@@ -132,6 +148,37 @@ export const albums = pgTable(
   ],
 );
 
+// Local upload batches track photo processing; storage will move to R2 later.
+export const uploadBatches = pgTable(
+  "upload_batches",
+  {
+    id: serial("id").primaryKey(),
+    rallyEventId: integer("rally_event_id")
+      .notNull()
+      .references(() => rallyEvents.id, { onDelete: "cascade" }),
+    albumId: integer("album_id")
+      .notNull()
+      .references(() => albums.id, { onDelete: "cascade" }),
+    createdById: integer("created_by_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    status: uploadBatchStatusEnum("status").notNull().default("created"),
+    totalFiles: integer("total_files").notNull().default(0),
+    processedFiles: integer("processed_files").notNull().default(0),
+    failedFiles: integer("failed_files").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("upload_batches_rally_event_idx").on(table.rallyEventId),
+    index("upload_batches_album_idx").on(table.albumId),
+    index("upload_batches_created_by_idx").on(table.createdById),
+    index("upload_batches_status_idx").on(table.status),
+  ],
+);
+
 // Media items hold shared fields plus photo metadata or YouTube metadata depending on type.
 export const mediaItems = pgTable(
   "media_items",
@@ -144,6 +191,7 @@ export const mediaItems = pgTable(
       .notNull()
       .references(() => rallyEvents.id, { onDelete: "cascade" }),
     type: mediaTypeEnum("type").notNull(),
+    status: mediaStatusEnum("status").notNull().default("ready"),
     title: varchar("title", { length: 180 }),
     caption: text("caption"),
     dateTaken: timestamp("date_taken", { withTimezone: true }),
@@ -152,6 +200,11 @@ export const mediaItems = pgTable(
     createdById: integer("created_by_id").references(() => users.id, {
       onDelete: "set null",
     }),
+    uploadBatchId: integer("upload_batch_id").references(() => uploadBatches.id, {
+      onDelete: "set null",
+    }),
+    originalFilename: varchar("original_filename", { length: 255 }),
+    processingError: text("processing_error"),
     originalImageUrl: text("original_image_url"),
     originalImageR2Key: text("original_image_r2_key"),
     thumbnailImageUrl: text("thumbnail_image_url"),
@@ -177,7 +230,9 @@ export const mediaItems = pgTable(
     index("media_items_rally_event_idx").on(table.rallyEventId),
     index("media_items_album_idx").on(table.albumId),
     index("media_items_type_idx").on(table.type),
+    index("media_items_status_idx").on(table.status),
     index("media_items_created_by_idx").on(table.createdById),
+    index("media_items_upload_batch_idx").on(table.uploadBatchId),
   ],
 );
 
@@ -259,6 +314,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   rallyEvents: many(rallyEvents),
   albums: many(albums),
   mediaItems: many(mediaItems),
+  uploadBatches: many(uploadBatches),
   favorites: many(favorites),
   comments: many(mediaComments),
 }));
@@ -270,6 +326,7 @@ export const rallyEventsRelations = relations(rallyEvents, ({ one, many }) => ({
   }),
   albums: many(albums),
   mediaItems: many(mediaItems),
+  uploadBatches: many(uploadBatches),
 }));
 
 export const albumsRelations = relations(albums, ({ one, many }) => ({
@@ -282,6 +339,7 @@ export const albumsRelations = relations(albums, ({ one, many }) => ({
     references: [users.id],
   }),
   mediaItems: many(mediaItems),
+  uploadBatches: many(uploadBatches),
 }));
 
 export const mediaItemsRelations = relations(mediaItems, ({ one, many }) => ({
@@ -297,9 +355,29 @@ export const mediaItemsRelations = relations(mediaItems, ({ one, many }) => ({
     fields: [mediaItems.createdById],
     references: [users.id],
   }),
+  uploadBatch: one(uploadBatches, {
+    fields: [mediaItems.uploadBatchId],
+    references: [uploadBatches.id],
+  }),
   mediaTags: many(mediaTags),
   favorites: many(favorites),
   comments: many(mediaComments),
+}));
+
+export const uploadBatchesRelations = relations(uploadBatches, ({ one, many }) => ({
+  rallyEvent: one(rallyEvents, {
+    fields: [uploadBatches.rallyEventId],
+    references: [rallyEvents.id],
+  }),
+  album: one(albums, {
+    fields: [uploadBatches.albumId],
+    references: [albums.id],
+  }),
+  createdBy: one(users, {
+    fields: [uploadBatches.createdById],
+    references: [users.id],
+  }),
+  mediaItems: many(mediaItems),
 }));
 
 export const tagsRelations = relations(tags, ({ many }) => ({
