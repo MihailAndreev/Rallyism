@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { AlbumPhotoViewer } from "@/components/rally-events/album-photo-viewer";
 import { RallyAccessDenied } from "@/components/rally-events/rally-access-denied";
 import { formatDate } from "@/components/rally-events/rally-event-format";
 import { RallyEventStats } from "@/components/rally-events/rally-event-stats";
@@ -47,6 +48,7 @@ function getAlbumPageHref(input: {
   albumId: number;
   filter: AlbumMediaFilter;
   page?: number;
+  photoId?: number;
 }) {
   const params = new URLSearchParams();
 
@@ -56,6 +58,10 @@ function getAlbumPageHref(input: {
 
   if (input.page && input.page > 1) {
     params.set("page", String(input.page));
+  }
+
+  if (input.photoId) {
+    params.set("photo", String(input.photoId));
   }
 
   const query = params.toString();
@@ -73,11 +79,21 @@ function getMediaTitle(item: AlbumMediaItem) {
   return item.title ?? (item.type === "video" ? "Untitled video" : "Untitled photo");
 }
 
-function PhotoCard({ item }: { item: AlbumMediaItem }) {
+function PhotoCard({
+  item,
+  href,
+}: {
+  item: AlbumMediaItem;
+  href: string;
+}) {
   const imageUrl = getPhotoImageUrl(item);
 
   return (
-    <article className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm">
+    <Link
+      href={href}
+      scroll={false}
+      className="group block overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-red-200 hover:shadow-md"
+    >
       <div className="aspect-[4/3] w-full bg-zinc-100">
         {imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -105,7 +121,7 @@ function PhotoCard({ item }: { item: AlbumMediaItem }) {
           </p>
         ) : null}
       </div>
-    </article>
+    </Link>
   );
 }
 
@@ -163,8 +179,18 @@ function VideoCard({ item }: { item: AlbumMediaItem }) {
   );
 }
 
-function MediaCard({ item }: { item: AlbumMediaItem }) {
-  return item.type === "video" ? <VideoCard item={item} /> : <PhotoCard item={item} />;
+function MediaCard({
+  item,
+  href,
+}: {
+  item: AlbumMediaItem;
+  href: string;
+}) {
+  return item.type === "video" ? (
+    <VideoCard item={item} />
+  ) : (
+    <PhotoCard item={item} href={href} />
+  );
 }
 
 export default async function AlbumPage({
@@ -209,6 +235,16 @@ export default async function AlbumPage({
   }
 
   const { album, mediaPage } = result;
+  const viewerPhotos = mediaPage.items
+    .filter((item) => item.type === "photo")
+    .map((item) => ({
+      id: item.id,
+      title: item.title,
+      caption: item.caption,
+      thumbnailImageUrl: item.thumbnailImageUrl,
+      displayImageUrl: item.displayImageUrl,
+      originalImageUrl: item.originalImageUrl,
+    }));
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
@@ -299,7 +335,17 @@ export default async function AlbumPage({
         ) : mediaPage.items.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {mediaPage.items.map((item) => (
-              <MediaCard key={item.id} item={item} />
+              <MediaCard
+                key={item.id}
+                item={item}
+                href={getAlbumPageHref({
+                  rallyEventId,
+                  albumId: parsedAlbumId,
+                  filter: mediaPage.filter,
+                  page: mediaPage.currentPage,
+                  photoId: item.id,
+                })}
+              />
             ))}
           </div>
         ) : (
@@ -358,6 +404,8 @@ export default async function AlbumPage({
           )}
         </nav>
       ) : null}
+
+      <AlbumPhotoViewer photos={viewerPhotos} />
     </div>
   );
 }
