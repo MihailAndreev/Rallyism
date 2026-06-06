@@ -148,7 +148,7 @@ export const albums = pgTable(
   ],
 );
 
-// Local upload batches track photo processing; storage will move to R2 later.
+// Upload batches track server-side photo processing and R2 storage results.
 export const uploadBatches = pgTable(
   "upload_batches",
   {

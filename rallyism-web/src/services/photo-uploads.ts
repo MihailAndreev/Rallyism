@@ -1,13 +1,17 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import sharp from "sharp";
 import { eq } from "drizzle-orm";
+import sharp from "sharp";
 
 import { db } from "@/db";
 import { mediaItems, uploadBatches } from "@/db/schema";
 import { canContribute } from "@/lib/auth/authorization";
+import {
+  deleteR2Object,
+  getR2PublicUrl,
+  uploadR2Object,
+} from "@/lib/storage/r2";
 import { getEditableAlbum } from "@/services/rally-events";
 import type { AuthUser } from "@/services/users";
 
@@ -51,17 +55,6 @@ function getDisplayName(filename: string) {
   return parsed.name || "Photo";
 }
 
-function sanitizeFilenamePart(value: string) {
-  const parsed = path.parse(value);
-  const base = parsed.name || "photo";
-
-  return base
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "")
-    .slice(0, 80) || "photo";
-}
-
 function assertPhotoFile(file: File) {
   const filename = getOriginalFilename(file);
   const extension = path.extname(filename).toLowerCase();
@@ -101,26 +94,12 @@ async function saveProcessedPhoto(input: {
   const originalFilename = getOriginalFilename(input.file);
   const buffer = Buffer.from(await input.file.arrayBuffer());
   const image = sharp(buffer).rotate();
-  const filenamePart = sanitizeFilenamePart(originalFilename);
-  const uniquePart = `${Date.now()}-${randomUUID()}`;
-  const basePublicPath = `/uploads/rally-events/${input.rallyEventId}/albums/${input.albumId}`;
-  const storageDir = path.join(
-    process.cwd(),
-    "public",
-    "uploads",
-    "rally-events",
-    String(input.rallyEventId),
-    "albums",
-    String(input.albumId),
-  );
-  const displayFilename = `${uniquePart}-${filenamePart}.webp`;
-  const thumbnailFilename = `${uniquePart}-${filenamePart}-thumb.webp`;
-  const displayFilePath = path.join(storageDir, displayFilename);
-  const thumbnailFilePath = path.join(storageDir, thumbnailFilename);
-  const displayUrl = `${basePublicPath}/${displayFilename}`;
-  const thumbnailUrl = `${basePublicPath}/${thumbnailFilename}`;
-
-  await mkdir(storageDir, { recursive: true });
+  const uniquePart = randomUUID();
+  const baseObjectKey = `rally-events/${input.rallyEventId}/albums/${input.albumId}/photos`;
+  const displayImageR2Key = `${baseObjectKey}/${uniquePart}-main.webp`;
+  const thumbnailImageR2Key = `${baseObjectKey}/${uniquePart}-thumb.webp`;
+  const displayUrl = getR2PublicUrl(displayImageR2Key);
+  const thumbnailUrl = getR2PublicUrl(thumbnailImageR2Key);
 
   const displayResult = await image
     .clone()
@@ -133,36 +112,59 @@ async function saveProcessedPhoto(input: {
     .webp({ quality: 80 })
     .toBuffer();
 
+  // New uploads use R2 as primary storage. Existing DB rows with /uploads URLs
+  // remain renderable; no local files are deleted or rewritten here.
   await Promise.all([
-    writeFile(displayFilePath, displayResult.data),
-    writeFile(thumbnailFilePath, thumbnailBuffer),
+    uploadR2Object({
+      key: displayImageR2Key,
+      body: displayResult.data,
+      contentType: "image/webp",
+    }),
+    uploadR2Object({
+      key: thumbnailImageR2Key,
+      body: thumbnailBuffer,
+      contentType: "image/webp",
+    }),
   ]);
 
   const width = displayResult.info.width;
   const height = displayResult.info.height;
   const aspectRatio = width && height ? (width / height).toFixed(4) : null;
 
-  const [mediaItem] = await db
-    .insert(mediaItems)
-    .values({
-      albumId: input.albumId,
-      rallyEventId: input.rallyEventId,
-      type: "photo",
-      status: "ready",
-      title: getDisplayName(originalFilename),
-      createdById: input.createdById,
-      uploadBatchId: input.uploadBatchId,
-      originalFilename,
-      thumbnailImageUrl: thumbnailUrl,
-      displayImageUrl: displayUrl,
-      mimeType: "image/webp",
-      fileSizeBytes: displayResult.data.length,
-      width,
-      height,
-      aspectRatio,
-      updatedAt: new Date(),
-    })
-    .returning({ id: mediaItems.id });
+  let mediaItem: { id: number };
+
+  try {
+    [mediaItem] = await db
+      .insert(mediaItems)
+      .values({
+        albumId: input.albumId,
+        rallyEventId: input.rallyEventId,
+        type: "photo",
+        status: "ready",
+        title: getDisplayName(originalFilename),
+        createdById: input.createdById,
+        uploadBatchId: input.uploadBatchId,
+        originalFilename,
+        thumbnailImageUrl: thumbnailUrl,
+        thumbnailImageR2Key,
+        displayImageUrl: displayUrl,
+        displayImageR2Key,
+        mimeType: "image/webp",
+        fileSizeBytes: displayResult.data.length,
+        width,
+        height,
+        aspectRatio,
+        updatedAt: new Date(),
+      })
+      .returning({ id: mediaItems.id });
+  } catch (error) {
+    await Promise.allSettled([
+      deleteR2Object(displayImageR2Key),
+      deleteR2Object(thumbnailImageR2Key),
+    ]);
+
+    throw error;
+  }
 
   return {
     filename: originalFilename,

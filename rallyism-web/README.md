@@ -1,5 +1,22 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Cloudflare R2
+
+Photo uploads are processed on the server with Sharp, then the generated WebP
+display image and thumbnail are stored in Cloudflare R2. Configure these values
+in `.env`:
+
+```bash
+R2_ENDPOINT="https://example-account-id.r2.cloudflarestorage.com"
+R2_ACCESS_KEY_ID="replace-with-r2-access-key-id"
+R2_SECRET_ACCESS_KEY="replace-with-r2-secret-access-key"
+R2_BUCKET_NAME="rallyism-media"
+R2_PUBLIC_BASE_URL="https://media.example.com"
+```
+
+`R2_PUBLIC_BASE_URL` must be a public bucket URL or custom domain base URL. Do
+not expose R2 access keys in client components or committed source files.
+
 ## Getting Started
 
 First, run the development server:
