@@ -15,6 +15,16 @@ export function canContribute(user: AuthUser | null) {
   return isAdmin(user) || isApprovedUser(user);
 }
 
+export async function requireContributor(from = "/dashboard") {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    redirect(`/login?from=${encodeURIComponent(from)}`);
+  }
+
+  return canContribute(user) ? user : null;
+}
+
 export async function requireAdmin(from = "/admin/users") {
   const user = await getCurrentUser();
 

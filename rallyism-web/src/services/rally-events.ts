@@ -2,9 +2,12 @@ import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { albums, mediaItems, rallyEvents, users } from "@/db/schema";
+import { canContribute, isAdmin } from "@/lib/auth/authorization";
 import type { AuthUser } from "@/services/users";
 
 export type RallyEventState = "upcoming" | "current" | "past";
+export type RallyEventChampionship = "WRC" | "ERC" | "national" | "other";
+export type RallyEventVisibility = "private" | "public" | "unlisted";
 
 export type RallyEventSummaryCounts = {
   albumsCount: number;
@@ -17,7 +20,7 @@ export type RallyEventSummary = {
   id: number;
   title: string;
   rallyName: string;
-  championship: "WRC" | "ERC" | "national" | "other";
+  championship: RallyEventChampionship;
   seasonYear: number;
   country: string;
   region: string | null;
@@ -25,7 +28,7 @@ export type RallyEventSummary = {
   endDate: string | null;
   description: string | null;
   coverImageUrl: string | null;
-  visibility: "private" | "public" | "unlisted";
+  visibility: RallyEventVisibility;
   featured: boolean;
   createdById: number | null;
   createdAt: Date;
@@ -108,6 +111,51 @@ export type AlbumMediaGalleryDetailsResult =
       mediaPage: AlbumMediaPage;
     };
 
+export type RallyEventFormInput = {
+  title: string;
+  rallyName: string;
+  championship: string;
+  seasonYear: string;
+  country: string;
+  region: string;
+  startDate: string;
+  endDate: string;
+  description: string;
+  coverImageUrl: string;
+  visibility: string;
+  featured?: string | boolean | null;
+};
+
+export type RallyEventFormValues = {
+  title: string;
+  rallyName: string;
+  championship: RallyEventChampionship;
+  seasonYear: number;
+  country: string;
+  region: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  description: string | null;
+  coverImageUrl: string | null;
+  visibility: RallyEventVisibility;
+  featured: boolean;
+};
+
+export class RallyEventValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "RallyEventValidationError";
+  }
+}
+
+export type EditableRallyEventResult =
+  | { status: "not-found" }
+  | { status: "access-denied" }
+  | { status: "allowed"; event: RallyEventSummary };
+
+const validChampionships = ["WRC", "ERC", "national", "other"] as const;
+const validVisibilities = ["private", "public", "unlisted"] as const;
+
 function toDateOnly(value: Date) {
   return new Date(value.getFullYear(), value.getMonth(), value.getDate());
 }
@@ -150,6 +198,117 @@ function userCanAccessEvent(
   }
 
   return currentUser.role === "admin" || event.createdById === currentUser.id;
+}
+
+export function userCanManageEvent(
+  event: { createdById: number | null },
+  currentUser: AuthUser | null,
+) {
+  if (!currentUser) {
+    return false;
+  }
+
+  return isAdmin(currentUser) || event.createdById === currentUser.id;
+}
+
+function normalizeNullableText(value: string) {
+  const trimmed = value.trim();
+
+  return trimmed ? trimmed : null;
+}
+
+function isValidDateOnly(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+
+  const date = new Date(`${value}T00:00:00Z`);
+
+  return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value);
+}
+
+function normalizeOptionalDate(value: string) {
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return null;
+  }
+
+  if (!isValidDateOnly(trimmed)) {
+    throw new RallyEventValidationError("Enter valid rally dates.");
+  }
+
+  return trimmed;
+}
+
+function parseChampionship(value: string): RallyEventChampionship {
+  if (validChampionships.includes(value as RallyEventChampionship)) {
+    return value as RallyEventChampionship;
+  }
+
+  throw new RallyEventValidationError("Choose a valid championship.");
+}
+
+function parseVisibility(value: string): RallyEventVisibility {
+  if (validVisibilities.includes(value as RallyEventVisibility)) {
+    return value as RallyEventVisibility;
+  }
+
+  throw new RallyEventValidationError("Choose a valid visibility.");
+}
+
+export function validateRallyEventInput(
+  input: RallyEventFormInput,
+  currentUser: AuthUser,
+): RallyEventFormValues {
+  const title = input.title.trim();
+  const rallyName = input.rallyName.trim();
+  const country = input.country.trim();
+  const seasonYear = Number(input.seasonYear);
+  const currentYear = new Date().getFullYear();
+  const startDate = normalizeOptionalDate(input.startDate);
+  const endDate = normalizeOptionalDate(input.endDate);
+
+  if (!title) {
+    throw new RallyEventValidationError("Title is required.");
+  }
+
+  if (!rallyName) {
+    throw new RallyEventValidationError("Rally name is required.");
+  }
+
+  if (
+    !Number.isInteger(seasonYear) ||
+    seasonYear < 1950 ||
+    seasonYear > currentYear + 2
+  ) {
+    throw new RallyEventValidationError(
+      `Season year must be between 1950 and ${currentYear + 2}.`,
+    );
+  }
+
+  if (!country) {
+    throw new RallyEventValidationError("Country is required.");
+  }
+
+  if (startDate && endDate && endDate < startDate) {
+    throw new RallyEventValidationError("End date cannot be before start date.");
+  }
+
+  return {
+    title,
+    rallyName,
+    championship: parseChampionship(input.championship),
+    seasonYear,
+    country,
+    region: normalizeNullableText(input.region),
+    startDate,
+    endDate,
+    description: normalizeNullableText(input.description),
+    coverImageUrl: normalizeNullableText(input.coverImageUrl),
+    visibility: parseVisibility(input.visibility),
+    featured: isAdmin(currentUser) && input.featured === "on",
+  };
 }
 
 function toRallyEventSummary(
@@ -593,6 +752,82 @@ export async function getRallyEventDetails(
     albums: eventAlbums,
     mediaPreview,
   };
+}
+
+export async function createRallyEvent(input: {
+  currentUser: AuthUser;
+  values: RallyEventFormValues;
+}) {
+  if (!canContribute(input.currentUser)) {
+    throw new RallyEventValidationError("Your account is not approved to create rally events.");
+  }
+
+  const [event] = await db
+    .insert(rallyEvents)
+    .values({
+      ...input.values,
+      createdById: input.currentUser.id,
+      updatedAt: new Date(),
+    })
+    .returning();
+
+  return event;
+}
+
+export async function getEditableRallyEvent(
+  id: number,
+  currentUser: AuthUser | null,
+): Promise<EditableRallyEventResult> {
+  const [event] = await db
+    .select()
+    .from(rallyEvents)
+    .where(eq(rallyEvents.id, id))
+    .limit(1);
+
+  if (!event) {
+    return { status: "not-found" };
+  }
+
+  if (!userCanManageEvent(event, currentUser)) {
+    return { status: "access-denied" };
+  }
+
+  const counts = await getRallyEventSummaryCounts(id);
+
+  return {
+    status: "allowed",
+    event: toRallyEventSummary(event, counts, null),
+  };
+}
+
+export async function updateRallyEvent(input: {
+  id: number;
+  currentUser: AuthUser;
+  values: RallyEventFormValues;
+}) {
+  const access = await getEditableRallyEvent(input.id, input.currentUser);
+
+  if (access.status === "not-found") {
+    return { status: "not-found" as const };
+  }
+
+  if (access.status === "access-denied") {
+    return { status: "access-denied" as const };
+  }
+
+  const [event] = await db
+    .update(rallyEvents)
+    .set({
+      ...input.values,
+      featured: isAdmin(input.currentUser)
+        ? input.values.featured
+        : access.event.featured,
+      updatedAt: new Date(),
+    })
+    .where(eq(rallyEvents.id, input.id))
+    .returning();
+
+  return { status: "allowed" as const, event };
 }
 
 export async function getRallyEventById(id: number) {

@@ -40,6 +40,12 @@ export default async function DashboardPage() {
             <p className="text-sm text-zinc-500">
               Signed in as {user.name || user.email}
             </p>
+            <Link
+              href="/rally-events/new"
+              className="inline-flex h-10 items-center justify-center rounded-md bg-red-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700"
+            >
+              Create rally event
+            </Link>
             {isAdmin(user) ? (
               <Link
                 href="/admin/users"

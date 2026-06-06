@@ -11,7 +11,10 @@ import { RallyEventStateBadge } from "@/components/rally-events/rally-event-stat
 import { RallyEventStats } from "@/components/rally-events/rally-event-stats";
 import { ShareRallyLinkButton } from "@/components/rally-events/share-rally-link-button";
 import { getCurrentUser } from "@/lib/auth/session";
-import { getRallyEventDetails } from "@/services/rally-events";
+import {
+  getRallyEventDetails,
+  userCanManageEvent,
+} from "@/services/rally-events";
 
 type RallyEventPageProps = {
   params: Promise<{
@@ -47,6 +50,7 @@ export default async function RallyEventPage({ params }: RallyEventPageProps) {
   const { event, albums, mediaPreview } = result;
   const backHref = user ? "/dashboard" : "/";
   const backLabel = user ? "Back to Dashboard" : "Back to Rallyism";
+  const canManageEvent = userCanManageEvent(event, user);
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
@@ -136,6 +140,18 @@ export default async function RallyEventPage({ params }: RallyEventPageProps) {
           <section className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
             <ShareRallyLinkButton />
           </section>
+
+          {canManageEvent ? (
+            <section className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
+              <h2 className="text-lg font-semibold text-zinc-950">Manage</h2>
+              <Link
+                href={`/rally-events/${event.id}/edit`}
+                className="mt-4 inline-flex h-10 items-center justify-center rounded-md border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-900 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-100"
+              >
+                Edit event
+              </Link>
+            </section>
+          ) : null}
         </aside>
       </div>
     </div>
