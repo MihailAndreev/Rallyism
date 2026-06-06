@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 
+import { canContribute } from "@/lib/auth/authorization";
 import { createSessionCookie } from "@/lib/auth/session";
 import { verifyPassword } from "@/lib/auth/password";
 import type { AuthActionState } from "@/lib/validation/auth";
@@ -38,6 +39,10 @@ export async function loginAction(
     email: user.email,
     role: user.role,
   });
+
+  if (!canContribute(user)) {
+    redirect("/pending-approval");
+  }
 
   redirect(redirectTo);
 }

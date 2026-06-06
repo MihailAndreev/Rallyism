@@ -33,6 +33,7 @@ async function getOrCreateUser(input: {
   email: string;
   name: string;
   role: "user" | "admin";
+  approvalStatus: "pending" | "approved" | "rejected";
   photoUrl?: string;
 }) {
   const [existing] = await db
@@ -48,6 +49,7 @@ async function getOrCreateUser(input: {
         name: input.name,
         passwordHash: samplePasswordHash,
         role: input.role,
+        approvalStatus: input.approvalStatus,
         photoUrl: input.photoUrl,
         updatedAt: new Date(),
       })
@@ -64,6 +66,7 @@ async function getOrCreateUser(input: {
       name: input.name,
       passwordHash: samplePasswordHash,
       role: input.role,
+      approvalStatus: input.approvalStatus,
       photoUrl: input.photoUrl,
     })
     .returning();
@@ -206,6 +209,7 @@ async function main() {
     email: "admin@rallyism.test",
     name: "Rallyism Admin",
     role: "admin",
+    approvalStatus: "approved",
     photoUrl: "https://images.rallyism.test/users/admin.jpg",
   });
 
@@ -213,6 +217,7 @@ async function main() {
     email: "fan@rallyism.test",
     name: "Rally Fan",
     role: "user",
+    approvalStatus: "approved",
     photoUrl: "https://images.rallyism.test/users/fan.jpg",
   });
 

@@ -16,6 +16,11 @@ import {
 } from "drizzle-orm/pg-core";
 
 export const userRoleEnum = pgEnum("user_role", ["user", "admin"]);
+export const userApprovalStatusEnum = pgEnum("user_approval_status", [
+  "pending",
+  "approved",
+  "rejected",
+]);
 export const championshipEnum = pgEnum("championship", [
   "WRC",
   "ERC",
@@ -39,6 +44,9 @@ export const users = pgTable(
     name: varchar("name", { length: 120 }).notNull(),
     photoUrl: text("photo_url"),
     role: userRoleEnum("role").notNull().default("user"),
+    approvalStatus: userApprovalStatusEnum("approval_status")
+      .notNull()
+      .default("pending"),
     passwordResetTokenHash: varchar("password_reset_token_hash", {
       length: 255,
     }),

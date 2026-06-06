@@ -10,6 +10,7 @@ export type AuthUser = {
   name: string;
   photoUrl: string | null;
   role: "user" | "admin";
+  approvalStatus: "pending" | "approved" | "rejected";
 };
 
 export type UserWithPassword = AuthUser & {
@@ -34,6 +35,7 @@ export async function findUserById(id: number): Promise<AuthUser | null> {
       name: users.name,
       photoUrl: users.photoUrl,
       role: users.role,
+      approvalStatus: users.approvalStatus,
     })
     .from(users)
     .where(eq(users.id, id))
@@ -52,6 +54,7 @@ export async function findUserWithPasswordByEmail(
       name: users.name,
       photoUrl: users.photoUrl,
       role: users.role,
+      approvalStatus: users.approvalStatus,
       passwordHash: users.passwordHash,
     })
     .from(users)
@@ -75,6 +78,7 @@ export async function createUser(input: {
       email: input.email.toLowerCase(),
       passwordHash,
       role: "user",
+      approvalStatus: "pending",
     })
     .returning({
       id: users.id,
@@ -82,6 +86,7 @@ export async function createUser(input: {
       name: users.name,
       photoUrl: users.photoUrl,
       role: users.role,
+      approvalStatus: users.approvalStatus,
     });
 
   return user;

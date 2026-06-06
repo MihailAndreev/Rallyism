@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { EmptyDashboardSection } from "@/components/rally-events/empty-dashboard-section";
 import { RallyEventCard } from "@/components/rally-events/rally-event-card";
+import { canContribute } from "@/lib/auth/authorization";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getDashboardRallyEvents } from "@/services/rally-events";
 
@@ -10,6 +11,10 @@ export default async function DashboardPage() {
 
   if (!user) {
     redirect("/login?from=/dashboard");
+  }
+
+  if (!canContribute(user)) {
+    redirect("/pending-approval");
   }
 
   const { activeEvents, pastEvents } = await getDashboardRallyEvents();

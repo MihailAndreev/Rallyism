@@ -40,5 +40,5 @@ export async function registerAction(
     role: user.role,
   });
 
-  redirect("/dashboard");
+  redirect("/pending-approval");
 }
