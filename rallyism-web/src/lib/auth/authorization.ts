@@ -1,3 +1,6 @@
+import { redirect } from "next/navigation";
+
+import { getCurrentUser } from "@/lib/auth/session";
 import type { AuthUser } from "@/services/users";
 
 export function isAdmin(user: AuthUser | null) {
@@ -10,4 +13,14 @@ export function isApprovedUser(user: AuthUser | null) {
 
 export function canContribute(user: AuthUser | null) {
   return isAdmin(user) || isApprovedUser(user);
+}
+
+export async function requireAdmin(from = "/admin/users") {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    redirect(`/login?from=${encodeURIComponent(from)}`);
+  }
+
+  return isAdmin(user) ? user : null;
 }

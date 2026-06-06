@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 import { EmptyDashboardSection } from "@/components/rally-events/empty-dashboard-section";
 import { RallyEventCard } from "@/components/rally-events/rally-event-card";
-import { canContribute } from "@/lib/auth/authorization";
+import { canContribute, isAdmin } from "@/lib/auth/authorization";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getDashboardRallyEvents } from "@/services/rally-events";
 
@@ -35,9 +36,19 @@ export default async function DashboardPage() {
               next step.
             </p>
           </div>
-          <p className="text-sm text-zinc-500">
-            Signed in as {user.name || user.email}
-          </p>
+          <div className="flex flex-col gap-3 sm:items-end">
+            <p className="text-sm text-zinc-500">
+              Signed in as {user.name || user.email}
+            </p>
+            {isAdmin(user) ? (
+              <Link
+                href="/admin/users"
+                className="inline-flex h-10 items-center justify-center rounded-md border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-900 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-100"
+              >
+                Manage users
+              </Link>
+            ) : null}
+          </div>
         </div>
       </section>
 
