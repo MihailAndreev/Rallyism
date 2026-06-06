@@ -8,6 +8,7 @@ import { RallyEventStats } from "@/components/rally-events/rally-event-stats";
 import { getCurrentUser } from "@/lib/auth/session";
 import {
   getAlbumMediaGalleryDetails,
+  userCanManageEvent,
   type AlbumMediaFilter,
   type AlbumMediaItem,
 } from "@/services/rally-events";
@@ -234,7 +235,8 @@ export default async function AlbumPage({
     );
   }
 
-  const { album, mediaPage } = result;
+  const { album, event, mediaPage } = result;
+  const canManageEvent = userCanManageEvent(event, user);
   const viewerPhotos = mediaPage.items
     .filter((item) => item.type === "photo")
     .map((item) => ({
@@ -286,6 +288,14 @@ export default async function AlbumPage({
             videosCount={album.videosCount}
             showAlbums={false}
           />
+          {canManageEvent ? (
+            <Link
+              href={`/rally-events/${rallyEventId}/albums/${parsedAlbumId}/edit`}
+              className="inline-flex h-10 items-center justify-center rounded-md border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-900 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-100"
+            >
+              Edit album
+            </Link>
+          ) : null}
         </div>
       </section>
 

@@ -150,6 +150,12 @@ export default async function RallyEventPage({ params }: RallyEventPageProps) {
               >
                 Edit event
               </Link>
+              <Link
+                href={`/rally-events/${event.id}/albums/new`}
+                className="mt-3 inline-flex h-10 items-center justify-center rounded-md bg-red-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700"
+              >
+                Create album
+              </Link>
             </section>
           ) : null}
         </aside>

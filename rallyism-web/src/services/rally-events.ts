@@ -48,6 +48,22 @@ export type RallyEventAlbum = {
   createdAt: Date;
 } & RallyEventSummaryCounts;
 
+export type AlbumFormInput = {
+  title: string;
+  description: string;
+  albumDate: string;
+  coverImageUrl: string;
+  sortOrder: string;
+};
+
+export type AlbumFormValues = {
+  title: string;
+  description: string | null;
+  albumDate: string | null;
+  coverImageUrl: string | null;
+  sortOrder: number;
+};
+
 export type RallyEventMediaPreviewItem = {
   id: number;
   albumId: number;
@@ -148,10 +164,26 @@ export class RallyEventValidationError extends Error {
   }
 }
 
+export class AlbumValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AlbumValidationError";
+  }
+}
+
 export type EditableRallyEventResult =
   | { status: "not-found" }
   | { status: "access-denied" }
   | { status: "allowed"; event: RallyEventSummary };
+
+export type EditableAlbumResult =
+  | { status: "not-found" }
+  | { status: "access-denied" }
+  | {
+      status: "allowed";
+      event: RallyEventSummary;
+      album: RallyEventAlbum;
+    };
 
 const validChampionships = ["WRC", "ERC", "national", "other"] as const;
 const validVisibilities = ["private", "public", "unlisted"] as const;
@@ -308,6 +340,28 @@ export function validateRallyEventInput(
     coverImageUrl: normalizeNullableText(input.coverImageUrl),
     visibility: parseVisibility(input.visibility),
     featured: isAdmin(currentUser) && input.featured === "on",
+  };
+}
+
+export function validateAlbumInput(input: AlbumFormInput): AlbumFormValues {
+  const title = input.title.trim();
+  const sortOrderText = input.sortOrder.trim();
+  const sortOrder = sortOrderText ? Number(sortOrderText) : 0;
+
+  if (!title) {
+    throw new AlbumValidationError("Album title is required.");
+  }
+
+  if (!Number.isInteger(sortOrder)) {
+    throw new AlbumValidationError("Sort order must be a whole number.");
+  }
+
+  return {
+    title,
+    description: normalizeNullableText(input.description),
+    albumDate: normalizeOptionalDate(input.albumDate),
+    coverImageUrl: normalizeNullableText(input.coverImageUrl),
+    sortOrder,
   };
 }
 
@@ -678,7 +732,22 @@ export async function getRallyEventAlbums(
     getAlbumCountsByAlbum(rallyEventId),
   ]);
 
-  return albumRows.map((album) => ({
+  return albumRows.map((album) =>
+    toRallyEventAlbum(
+      album,
+      normalizeCounts({
+        albumsCount: 0,
+        ...countsByAlbum.get(album.id),
+      }),
+    ),
+  );
+}
+
+function toRallyEventAlbum(
+  album: typeof albums.$inferSelect,
+  counts: RallyEventSummaryCounts,
+): RallyEventAlbum {
+  return {
     id: album.id,
     rallyEventId: album.rallyEventId,
     title: album.title,
@@ -687,11 +756,8 @@ export async function getRallyEventAlbums(
     coverImageUrl: album.coverImageUrl,
     sortOrder: album.sortOrder,
     createdAt: album.createdAt,
-    ...normalizeCounts({
-      albumsCount: 0,
-      ...countsByAlbum.get(album.id),
-    }),
-  }));
+    ...counts,
+  };
 }
 
 export async function getRallyEventMediaPreview(
@@ -828,6 +894,112 @@ export async function updateRallyEvent(input: {
     .returning();
 
   return { status: "allowed" as const, event };
+}
+
+export async function createAlbum(input: {
+  rallyEventId: number;
+  currentUser: AuthUser;
+  values: AlbumFormValues;
+}) {
+  if (!canContribute(input.currentUser)) {
+    throw new AlbumValidationError("Your account is not approved to create albums.");
+  }
+
+  const eventAccess = await getEditableRallyEvent(
+    input.rallyEventId,
+    input.currentUser,
+  );
+
+  if (eventAccess.status !== "allowed") {
+    return eventAccess;
+  }
+
+  const [album] = await db
+    .insert(albums)
+    .values({
+      ...input.values,
+      rallyEventId: input.rallyEventId,
+      createdById: input.currentUser.id,
+      updatedAt: new Date(),
+    })
+    .returning();
+
+  return { status: "allowed" as const, album };
+}
+
+export async function getEditableAlbum(input: {
+  rallyEventId: number;
+  albumId: number;
+  currentUser: AuthUser | null;
+}): Promise<EditableAlbumResult> {
+  const eventAccess = await getEditableRallyEvent(
+    input.rallyEventId,
+    input.currentUser,
+  );
+
+  if (eventAccess.status !== "allowed") {
+    return eventAccess;
+  }
+
+  const [album] = await db
+    .select()
+    .from(albums)
+    .where(
+      and(
+        eq(albums.id, input.albumId),
+        eq(albums.rallyEventId, input.rallyEventId),
+      ),
+    )
+    .limit(1);
+
+  if (!album) {
+    return { status: "not-found" };
+  }
+
+  const albumCounts = await getSingleAlbumMediaCounts(input.albumId);
+
+  return {
+    status: "allowed",
+    event: eventAccess.event,
+    album: toRallyEventAlbum(album, albumCounts),
+  };
+}
+
+export async function updateAlbum(input: {
+  rallyEventId: number;
+  albumId: number;
+  currentUser: AuthUser;
+  values: AlbumFormValues;
+}) {
+  if (!canContribute(input.currentUser)) {
+    throw new AlbumValidationError("Your account is not approved to edit albums.");
+  }
+
+  const access = await getEditableAlbum({
+    rallyEventId: input.rallyEventId,
+    albumId: input.albumId,
+    currentUser: input.currentUser,
+  });
+
+  if (access.status !== "allowed") {
+    return access;
+  }
+
+  const [album] = await db
+    .update(albums)
+    .set({
+      ...input.values,
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(albums.id, input.albumId),
+        eq(albums.rallyEventId, input.rallyEventId),
+      ),
+    )
+    .returning();
+
+  return { status: "allowed" as const, album };
 }
 
 export async function getRallyEventById(id: number) {
