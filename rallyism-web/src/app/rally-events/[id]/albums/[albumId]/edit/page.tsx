@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
-import { updateAlbumAction } from "@/app/rally-events/[id]/albums/[albumId]/edit/actions";
+import {
+  deleteAlbumAction,
+  updateAlbumAction,
+} from "@/app/rally-events/[id]/albums/[albumId]/edit/actions";
 import { AlbumForm } from "@/components/rally-events/album-form";
 import { RallyAccessDenied } from "@/components/rally-events/rally-access-denied";
 import { requireContributor } from "@/lib/auth/authorization";
@@ -82,6 +85,7 @@ export default async function EditAlbumPage({
           album={result.album}
           albumId={parsedAlbumId}
           cancelHref={`/rally-events/${rallyEventId}/albums/${parsedAlbumId}`}
+          deleteAction={deleteAlbumAction}
           error={resolvedSearchParams?.error}
           rallyEventId={rallyEventId}
           submitLabel="Save changes"

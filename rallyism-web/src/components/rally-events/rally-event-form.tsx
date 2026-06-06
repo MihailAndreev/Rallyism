@@ -6,6 +6,7 @@ import type { RallyEventSummary } from "@/services/rally-events";
 type RallyEventFormProps = {
   action: (formData: FormData) => void | Promise<void>;
   currentUserIsAdmin: boolean;
+  deleteAction?: (formData: FormData) => void | Promise<void>;
   error?: string;
   event?: RallyEventSummary;
   eventId?: number;
@@ -49,6 +50,7 @@ const textareaClass =
 export function RallyEventForm({
   action,
   currentUserIsAdmin,
+  deleteAction,
   error,
   event,
   eventId,
@@ -56,16 +58,17 @@ export function RallyEventForm({
   cancelHref,
 }: RallyEventFormProps) {
   return (
-    <form action={action} className="space-y-6">
-      {eventId ? <input type="hidden" name="eventId" value={eventId} /> : null}
+    <div className="space-y-6">
+      <form action={action} className="space-y-6">
+        {eventId ? <input type="hidden" name="eventId" value={eventId} /> : null}
 
-      {error ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-          {error}
-        </div>
-      ) : null}
+        {error ? (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            {error}
+          </div>
+        ) : null}
 
-      <div className="grid gap-5 sm:grid-cols-2">
+        <div className="grid gap-5 sm:grid-cols-2">
         <Field label="Title">
           <input
             className={inputClass}
@@ -171,42 +174,69 @@ export function RallyEventForm({
             ))}
           </select>
         </Field>
-      </div>
+        </div>
 
-      <Field label="Description">
-        <textarea
-          className={textareaClass}
-          defaultValue={event?.description ?? ""}
-          name="description"
-        />
-      </Field>
-
-      {currentUserIsAdmin ? (
-        <label className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3">
-          <input
-            className="h-4 w-4 rounded border-zinc-300 text-red-600 focus:ring-red-500"
-            defaultChecked={event?.featured ?? false}
-            name="featured"
-            type="checkbox"
+        <Field label="Description">
+          <textarea
+            className={textareaClass}
+            defaultValue={event?.description ?? ""}
+            name="description"
           />
-          <span className="text-sm font-semibold text-zinc-900">Featured</span>
-        </label>
-      ) : null}
+        </Field>
 
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <button
-          type="submit"
-          className="inline-flex h-11 items-center justify-center rounded-md bg-red-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700"
-        >
-          {submitLabel}
-        </button>
-        <Link
-          href={cancelHref}
-          className="inline-flex h-11 items-center justify-center rounded-md border border-zinc-300 bg-white px-5 text-sm font-semibold text-zinc-900 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-100"
-        >
-          Cancel
-        </Link>
-      </div>
-    </form>
+        {currentUserIsAdmin ? (
+          <label className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3">
+            <input
+              className="h-4 w-4 rounded border-zinc-300 text-red-600 focus:ring-red-500"
+              defaultChecked={event?.featured ?? false}
+              name="featured"
+              type="checkbox"
+            />
+            <span className="text-sm font-semibold text-zinc-900">Featured</span>
+          </label>
+        ) : null}
+
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <button
+            type="submit"
+            className="inline-flex h-11 items-center justify-center rounded-md bg-red-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700"
+          >
+            {submitLabel}
+          </button>
+          <Link
+            href={cancelHref}
+            className="inline-flex h-11 items-center justify-center rounded-md border border-zinc-300 bg-white px-5 text-sm font-semibold text-zinc-900 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-100"
+          >
+            Cancel
+          </Link>
+        </div>
+      </form>
+
+      {deleteAction && eventId ? (
+        <form action={deleteAction} className="border-t border-zinc-200 pt-6">
+          <input type="hidden" name="eventId" value={eventId} />
+          <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+            <h2 className="text-base font-semibold text-red-900">
+              Delete rally event
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-red-800">
+              This permanently deletes the event, its albums, photos and video
+              links. Type DELETE to confirm.
+            </p>
+            <input
+              className={`${inputClass} mt-4 border-red-200 bg-white`}
+              name="confirmation"
+              placeholder="DELETE"
+            />
+            <button
+              type="submit"
+              className="mt-3 inline-flex h-11 items-center justify-center rounded-md border border-red-200 bg-white px-5 text-sm font-semibold text-red-700 shadow-sm transition hover:bg-red-100"
+            >
+              Delete rally event
+            </button>
+          </div>
+        </form>
+      ) : null}
+    </div>
   );
 }

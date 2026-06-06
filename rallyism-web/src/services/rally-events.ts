@@ -262,6 +262,13 @@ export class PhotoStorageDeleteError extends Error {
   }
 }
 
+export class MediaStorageCleanupError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "MediaStorageCleanupError";
+  }
+}
+
 export type EditableRallyEventResult =
   | { status: "not-found" }
   | { status: "access-denied" }
@@ -1090,6 +1097,10 @@ export async function updateRallyEvent(input: {
   currentUser: AuthUser;
   values: RallyEventFormValues;
 }) {
+  if (!canContribute(input.currentUser)) {
+    throw new RallyEventValidationError("Your account is not approved to edit rally events.");
+  }
+
   const access = await getEditableRallyEvent(input.id, input.currentUser);
 
   if (access.status === "not-found") {
@@ -1113,6 +1124,52 @@ export async function updateRallyEvent(input: {
     .returning();
 
   return { status: "allowed" as const, event };
+}
+
+type MediaStorageKeyRow = {
+  thumbnailImageR2Key: string | null;
+  displayImageR2Key: string | null;
+  originalImageR2Key: string | null;
+};
+
+function collectR2Keys(
+  mediaRows: MediaStorageKeyRow[],
+  coverKeys: Array<string | null | undefined> = [],
+) {
+  const keys = new Set<string>();
+
+  for (const key of coverKeys) {
+    if (key) {
+      keys.add(key);
+    }
+  }
+
+  for (const row of mediaRows) {
+    if (row.thumbnailImageR2Key) {
+      keys.add(row.thumbnailImageR2Key);
+    }
+
+    if (row.displayImageR2Key) {
+      keys.add(row.displayImageR2Key);
+    }
+
+    if (row.originalImageR2Key) {
+      keys.add(row.originalImageR2Key);
+    }
+  }
+
+  return [...keys];
+}
+
+async function deleteR2KeysOrThrow(keys: string[]) {
+  const results = await Promise.allSettled(keys.map(deleteR2Object));
+  const failedCount = results.filter((result) => result.status === "rejected").length;
+
+  if (failedCount > 0) {
+    throw new MediaStorageCleanupError(
+      `${failedCount} storage object${failedCount === 1 ? "" : "s"} could not be deleted. Try again before deleting this content.`,
+    );
+  }
 }
 
 export async function createAlbum(input: {
@@ -1219,6 +1276,130 @@ export async function updateAlbum(input: {
     .returning();
 
   return { status: "allowed" as const, album };
+}
+
+export async function deleteAlbum(input: {
+  rallyEventId: number;
+  albumId: number;
+  currentUser: AuthUser;
+}) {
+  if (!canContribute(input.currentUser)) {
+    throw new AlbumValidationError("Your account is not approved to delete albums.");
+  }
+
+  const access = await getEditableAlbum({
+    rallyEventId: input.rallyEventId,
+    albumId: input.albumId,
+    currentUser: input.currentUser,
+  });
+
+  if (access.status !== "allowed") {
+    return access;
+  }
+
+  const [albumRow, mediaRows] = await Promise.all([
+    db
+      .select({
+        coverImageR2Key: albums.coverImageR2Key,
+      })
+      .from(albums)
+      .where(
+        and(
+          eq(albums.id, input.albumId),
+          eq(albums.rallyEventId, input.rallyEventId),
+        ),
+      )
+      .limit(1),
+    db
+      .select({
+        thumbnailImageR2Key: mediaItems.thumbnailImageR2Key,
+        displayImageR2Key: mediaItems.displayImageR2Key,
+        originalImageR2Key: mediaItems.originalImageR2Key,
+      })
+      .from(mediaItems)
+      .where(
+        and(
+          eq(mediaItems.albumId, input.albumId),
+          eq(mediaItems.rallyEventId, input.rallyEventId),
+          eq(mediaItems.type, "photo"),
+        ),
+      ),
+  ]);
+
+  await deleteR2KeysOrThrow(
+    collectR2Keys(mediaRows, [albumRow[0]?.coverImageR2Key]),
+  );
+
+  await db
+    .delete(albums)
+    .where(
+      and(
+        eq(albums.id, input.albumId),
+        eq(albums.rallyEventId, input.rallyEventId),
+      ),
+    );
+
+  return { status: "allowed" as const };
+}
+
+export async function deleteRallyEvent(input: {
+  rallyEventId: number;
+  currentUser: AuthUser;
+}) {
+  if (!canContribute(input.currentUser)) {
+    throw new RallyEventValidationError(
+      "Your account is not approved to delete rally events.",
+    );
+  }
+
+  const access = await getEditableRallyEvent(
+    input.rallyEventId,
+    input.currentUser,
+  );
+
+  if (access.status !== "allowed") {
+    return access;
+  }
+
+  const [eventRows, albumRows, mediaRows] = await Promise.all([
+    db
+      .select({
+        coverImageR2Key: rallyEvents.coverImageR2Key,
+      })
+      .from(rallyEvents)
+      .where(eq(rallyEvents.id, input.rallyEventId))
+      .limit(1),
+    db
+      .select({
+        coverImageR2Key: albums.coverImageR2Key,
+      })
+      .from(albums)
+      .where(eq(albums.rallyEventId, input.rallyEventId)),
+    db
+      .select({
+        thumbnailImageR2Key: mediaItems.thumbnailImageR2Key,
+        displayImageR2Key: mediaItems.displayImageR2Key,
+        originalImageR2Key: mediaItems.originalImageR2Key,
+      })
+      .from(mediaItems)
+      .where(
+        and(
+          eq(mediaItems.rallyEventId, input.rallyEventId),
+          eq(mediaItems.type, "photo"),
+        ),
+      ),
+  ]);
+
+  await deleteR2KeysOrThrow(
+    collectR2Keys(mediaRows, [
+      eventRows[0]?.coverImageR2Key,
+      ...albumRows.map((album) => album.coverImageR2Key),
+    ]),
+  );
+
+  await db.delete(rallyEvents).where(eq(rallyEvents.id, input.rallyEventId));
+
+  return { status: "allowed" as const };
 }
 
 export function userCanManageVideo(

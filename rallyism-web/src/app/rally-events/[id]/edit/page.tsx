@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
-import { updateRallyEventAction } from "@/app/rally-events/[id]/edit/actions";
+import {
+  deleteRallyEventAction,
+  updateRallyEventAction,
+} from "@/app/rally-events/[id]/edit/actions";
 import { RallyAccessDenied } from "@/components/rally-events/rally-access-denied";
 import { RallyEventForm } from "@/components/rally-events/rally-event-form";
 import { isAdmin, requireContributor } from "@/lib/auth/authorization";
@@ -74,6 +77,7 @@ export default async function EditRallyEventPage({
           action={updateRallyEventAction}
           cancelHref={`/rally-events/${eventId}`}
           currentUserIsAdmin={isAdmin(user)}
+          deleteAction={deleteRallyEventAction}
           error={resolvedSearchParams?.error}
           event={result.event}
           eventId={eventId}

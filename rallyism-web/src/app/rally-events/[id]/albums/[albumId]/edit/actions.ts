@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { requireContributor } from "@/lib/auth/authorization";
 import {
   AlbumValidationError,
+  deleteAlbum,
+  MediaStorageCleanupError,
   RallyEventValidationError,
   updateAlbum,
   validateAlbumInput,
@@ -79,4 +81,54 @@ export async function updateAlbumAction(formData: FormData) {
   }
 
   redirect(`/rally-events/${rallyEventId}/albums/${albumId}`);
+}
+
+export async function deleteAlbumAction(formData: FormData) {
+  const user = await requireContributor("/dashboard");
+
+  if (!user) {
+    redirect("/pending-approval");
+  }
+
+  const rallyEventId = getId(formData, "rallyEventId");
+  const albumId = getId(formData, "albumId");
+
+  if (!rallyEventId || !albumId) {
+    redirect("/dashboard");
+  }
+
+  if (String(formData.get("confirmation") ?? "").trim() !== "DELETE") {
+    redirect(getErrorHref(rallyEventId, albumId, "Type DELETE to confirm album deletion."));
+  }
+
+  let accessStatus: "allowed" | "not-found" | "access-denied" | null = null;
+
+  try {
+    const result = await deleteAlbum({
+      rallyEventId,
+      albumId,
+      currentUser: user,
+    });
+
+    accessStatus = result.status;
+  } catch (error) {
+    const message =
+      error instanceof AlbumValidationError ||
+      error instanceof RallyEventValidationError ||
+      error instanceof MediaStorageCleanupError
+        ? error.message
+        : "The album could not be deleted.";
+
+    redirect(getErrorHref(rallyEventId, albumId, message));
+  }
+
+  if (accessStatus === "not-found") {
+    redirect(`/rally-events/${rallyEventId}`);
+  }
+
+  if (accessStatus === "access-denied") {
+    redirect(getErrorHref(rallyEventId, albumId, "You cannot delete this album."));
+  }
+
+  redirect(`/rally-events/${rallyEventId}`);
 }

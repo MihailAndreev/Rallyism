@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 
 import { requireContributor } from "@/lib/auth/authorization";
 import {
+  deleteRallyEvent,
+  MediaStorageCleanupError,
   RallyEventValidationError,
   updateRallyEvent,
   validateRallyEventInput,
@@ -82,4 +84,51 @@ export async function updateRallyEventAction(formData: FormData) {
   }
 
   redirect(`/rally-events/${eventId}`);
+}
+
+export async function deleteRallyEventAction(formData: FormData) {
+  const user = await requireContributor("/dashboard");
+
+  if (!user) {
+    redirect("/pending-approval");
+  }
+
+  const eventId = getEventId(formData);
+
+  if (!eventId) {
+    redirect("/dashboard");
+  }
+
+  if (String(formData.get("confirmation") ?? "").trim() !== "DELETE") {
+    redirect(getErrorHref(eventId, "Type DELETE to confirm event deletion."));
+  }
+
+  let result:
+    | { status: "allowed" | "not-found" | "access-denied" }
+    | null = null;
+
+  try {
+    result = await deleteRallyEvent({
+      rallyEventId: eventId,
+      currentUser: user,
+    });
+  } catch (error) {
+    const message =
+      error instanceof MediaStorageCleanupError ||
+      error instanceof RallyEventValidationError
+        ? error.message
+        : "The rally event could not be deleted.";
+
+    redirect(getErrorHref(eventId, message));
+  }
+
+  if (result?.status === "not-found") {
+    redirect("/dashboard");
+  }
+
+  if (result?.status === "access-denied") {
+    redirect(getErrorHref(eventId, "You cannot delete this rally event."));
+  }
+
+  redirect("/dashboard");
 }
