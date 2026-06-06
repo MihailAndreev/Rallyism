@@ -1,4 +1,4 @@
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { albums, mediaItems, rallyEvents, users } from "@/db/schema";
@@ -68,6 +68,16 @@ export type RallyEventDetailsResult =
       mediaPreview: RallyEventMediaPreviewItem[];
     };
 
+export type PublicRallyEventsPage = {
+  events: RallyEventSummary[];
+  currentPage: number;
+  pageSize: number;
+  totalEvents: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+};
+
 function toDateOnly(value: Date) {
   return new Date(value.getFullYear(), value.getMonth(), value.getDate());
 }
@@ -99,10 +109,14 @@ function normalizeCounts(
 
 function userCanAccessEvent(
   event: { visibility: RallyEventSummary["visibility"]; createdById: number | null },
-  currentUser: AuthUser,
+  currentUser: AuthUser | null,
 ) {
   if (event.visibility === "public" || event.visibility === "unlisted") {
     return true;
+  }
+
+  if (!currentUser) {
+    return false;
   }
 
   return currentUser.role === "admin" || event.createdById === currentUser.id;
@@ -177,20 +191,34 @@ export async function getRallyEventSummaryCounts(
   });
 }
 
-async function getAlbumCountsByEvent() {
-  const rows = await db
+async function getAlbumCountsByEvent(rallyEventIds?: number[]) {
+  if (rallyEventIds && rallyEventIds.length === 0) {
+    return new Map<number, number>();
+  }
+
+  const query = db
     .select({
       rallyEventId: albums.rallyEventId,
       albumsCount: sql<number>`count(${albums.id})::int`,
     })
     .from(albums)
-    .groupBy(albums.rallyEventId);
+    .$dynamic();
+
+  if (rallyEventIds) {
+    query.where(inArray(albums.rallyEventId, rallyEventIds));
+  }
+
+  const rows = await query.groupBy(albums.rallyEventId);
 
   return new Map(rows.map((row) => [row.rallyEventId, row.albumsCount]));
 }
 
-async function getMediaCountsByEvent() {
-  const rows = await db
+async function getMediaCountsByEvent(rallyEventIds?: number[]) {
+  if (rallyEventIds && rallyEventIds.length === 0) {
+    return new Map<number, Omit<RallyEventSummaryCounts, "albumsCount">>();
+  }
+
+  const query = db
     .select({
       rallyEventId: mediaItems.rallyEventId,
       mediaCount: sql<number>`count(${mediaItems.id})::int`,
@@ -198,7 +226,13 @@ async function getMediaCountsByEvent() {
       videosCount: sql<number>`(count(${mediaItems.id}) filter (where ${mediaItems.type} = 'video'))::int`,
     })
     .from(mediaItems)
-    .groupBy(mediaItems.rallyEventId);
+    .$dynamic();
+
+  if (rallyEventIds) {
+    query.where(inArray(mediaItems.rallyEventId, rallyEventIds));
+  }
+
+  const rows = await query.groupBy(mediaItems.rallyEventId);
 
   return new Map(
     rows.map((row) => [
@@ -262,9 +296,70 @@ export async function getDashboardRallyEvents() {
   };
 }
 
+export async function getPublicRallyEventsPage(input: {
+  page?: number;
+  pageSize?: number;
+} = {}): Promise<PublicRallyEventsPage> {
+  const pageSize = input.pageSize ?? 9;
+  const requestedPage =
+    input.page && Number.isInteger(input.page) && input.page > 0 ? input.page : 1;
+
+  const [{ totalEvents }] = await db
+    .select({
+      totalEvents: sql<number>`count(${rallyEvents.id})::int`,
+    })
+    .from(rallyEvents)
+    .where(eq(rallyEvents.visibility, "public"));
+
+  const totalPages = Math.max(1, Math.ceil((totalEvents ?? 0) / pageSize));
+  const currentPage = Math.min(requestedPage, totalPages);
+  const offset = (currentPage - 1) * pageSize;
+
+  const eventRows = await db
+    .select({
+      event: rallyEvents,
+      creatorName: users.name,
+    })
+    .from(rallyEvents)
+    .leftJoin(users, eq(rallyEvents.createdById, users.id))
+    .where(eq(rallyEvents.visibility, "public"))
+    .orderBy(
+      desc(rallyEvents.featured),
+      desc(rallyEvents.startDate),
+      desc(rallyEvents.createdAt),
+    )
+    .limit(pageSize)
+    .offset(offset);
+
+  const eventIds = eventRows.map((row) => row.event.id);
+  const [albumCounts, mediaCounts] = await Promise.all([
+    getAlbumCountsByEvent(eventIds),
+    getMediaCountsByEvent(eventIds),
+  ]);
+
+  const events = eventRows.map((row) => {
+    const counts = normalizeCounts({
+      albumsCount: albumCounts.get(row.event.id),
+      ...mediaCounts.get(row.event.id),
+    });
+
+    return toRallyEventSummary(row.event, counts, row.creatorName);
+  });
+
+  return {
+    events,
+    currentPage,
+    pageSize,
+    totalEvents: totalEvents ?? 0,
+    totalPages,
+    hasPreviousPage: currentPage > 1,
+    hasNextPage: currentPage < totalPages,
+  };
+}
+
 export async function getRallyEventAccess(
   id: number,
-  currentUser: AuthUser,
+  currentUser: AuthUser | null,
 ) {
   const [event] = await db
     .select()
@@ -337,7 +432,7 @@ export async function getRallyEventMediaPreview(
 
 export async function getRallyEventDetails(
   id: number,
-  currentUser: AuthUser,
+  currentUser: AuthUser | null,
 ): Promise<RallyEventDetailsResult> {
   const [row] = await db
     .select({
@@ -390,7 +485,7 @@ export async function getRallyEventById(id: number) {
 export async function getAlbumPlaceholderDetails(input: {
   rallyEventId: number;
   albumId: number;
-  currentUser: AuthUser;
+  currentUser: AuthUser | null;
 }) {
   const access = await getRallyEventAccess(input.rallyEventId, input.currentUser);
 

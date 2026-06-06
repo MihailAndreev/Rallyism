@@ -3,7 +3,15 @@ import Link from "next/link";
 import { RallyEventStateBadge } from "@/components/rally-events/rally-event-state-badge";
 import type { RallyEventSummary } from "@/services/rally-events";
 
-export function RallyEventHeader({ event }: { event: RallyEventSummary }) {
+export function RallyEventHeader({
+  event,
+  backHref = "/dashboard",
+  backLabel = "Back to Dashboard",
+}: {
+  event: RallyEventSummary;
+  backHref?: string;
+  backLabel?: string;
+}) {
   return (
     <section className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm">
       {event.coverImageUrl ? (
@@ -33,10 +41,10 @@ export function RallyEventHeader({ event }: { event: RallyEventSummary }) {
           <p className="mt-2 text-lg text-zinc-600">{event.rallyName}</p>
         </div>
         <Link
-          href="/dashboard"
+          href={backHref}
           className="inline-flex text-sm font-semibold text-red-700 hover:text-red-800"
         >
-          Back to Dashboard
+          {backLabel}
         </Link>
       </div>
     </section>

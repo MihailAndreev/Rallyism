@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
 import { AlbumCard } from "@/components/rally-events/album-card";
 import { EmptyDashboardSection } from "@/components/rally-events/empty-dashboard-section";
@@ -23,10 +23,6 @@ export default async function RallyEventPage({ params }: RallyEventPageProps) {
   const { id } = await params;
   const user = await getCurrentUser();
 
-  if (!user) {
-    redirect(`/login?from=/rally-events/${id}`);
-  }
-
   const eventId = Number(id);
 
   if (!Number.isInteger(eventId)) {
@@ -40,25 +36,36 @@ export default async function RallyEventPage({ params }: RallyEventPageProps) {
   }
 
   if (result.status === "access-denied") {
-    return <RallyAccessDenied />;
+    return (
+      <RallyAccessDenied
+        backHref={user ? "/dashboard" : "/"}
+        backLabel={user ? "Back to Dashboard" : "Back to Rallyism"}
+      />
+    );
   }
 
   const { event, albums, mediaPreview } = result;
+  const backHref = user ? "/dashboard" : "/";
+  const backLabel = user ? "Back to Dashboard" : "Back to Rallyism";
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
       <div className="flex flex-wrap items-center gap-3">
         <Link
-          href="/dashboard"
+          href={backHref}
           className="inline-flex text-sm font-semibold text-red-700 hover:text-red-800"
         >
-          Back to Dashboard
+          {backLabel}
         </Link>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
         <main className="space-y-6">
-          <RallyEventHeader event={event} />
+          <RallyEventHeader
+            event={event}
+            backHref={backHref}
+            backLabel={backLabel}
+          />
 
           <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
             <h2 className="text-2xl font-semibold tracking-normal text-zinc-950">

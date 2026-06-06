@@ -1,6 +1,12 @@
 import Link from "next/link";
 
-export function RallyAccessDenied() {
+export function RallyAccessDenied({
+  backHref = "/dashboard",
+  backLabel = "Back to Dashboard",
+}: {
+  backHref?: string;
+  backLabel?: string;
+}) {
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-14 sm:px-6 lg:px-8">
       <section className="rounded-lg border border-zinc-200 bg-white p-6 text-center shadow-sm sm:p-8">
@@ -15,10 +21,10 @@ export function RallyAccessDenied() {
           users.
         </p>
         <Link
-          href="/dashboard"
+          href={backHref}
           className="mt-6 inline-flex h-11 items-center justify-center rounded-md bg-red-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700"
         >
-          Back to Dashboard
+          {backLabel}
         </Link>
       </section>
     </div>

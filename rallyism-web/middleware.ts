@@ -15,7 +15,7 @@ function getJwtSecret() {
 }
 
 function isPublicRoute(pathname: string) {
-  return publicRoutes.has(pathname);
+  return publicRoutes.has(pathname) || pathname.startsWith("/rally-events/");
 }
 
 function getSafeTargetPath(request: NextRequest) {

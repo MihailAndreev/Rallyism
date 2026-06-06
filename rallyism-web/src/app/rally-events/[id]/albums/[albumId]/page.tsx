@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
 import { RallyAccessDenied } from "@/components/rally-events/rally-access-denied";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -15,10 +15,6 @@ type AlbumPageProps = {
 export default async function AlbumPage({ params }: AlbumPageProps) {
   const { id, albumId } = await params;
   const user = await getCurrentUser();
-
-  if (!user) {
-    redirect(`/login?from=/rally-events/${id}/albums/${albumId}`);
-  }
 
   const rallyEventId = Number(id);
   const parsedAlbumId = Number(albumId);
@@ -38,7 +34,12 @@ export default async function AlbumPage({ params }: AlbumPageProps) {
   }
 
   if (result.status === "access-denied") {
-    return <RallyAccessDenied />;
+    return (
+      <RallyAccessDenied
+        backHref={user ? "/dashboard" : "/"}
+        backLabel={user ? "Back to Dashboard" : "Back to Rallyism"}
+      />
+    );
   }
 
   return (
