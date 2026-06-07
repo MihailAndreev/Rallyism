@@ -47,8 +47,18 @@ function getErrorHref(
   return `/rally-events/${rallyEventId}/albums/${albumId}/photos/${mediaId}/edit?${params.toString()}`;
 }
 
-function getAlbumPhotosHref(rallyEventId: number, albumId: number) {
-  return `/rally-events/${rallyEventId}/albums/${albumId}?filter=photos`;
+function getAlbumPhotosHref(
+  rallyEventId: number,
+  albumId: number,
+  toast?: "photo-deleted",
+) {
+  const params = new URLSearchParams({ filter: "photos" });
+
+  if (toast) {
+    params.set("toast", toast);
+  }
+
+  return `/rally-events/${rallyEventId}/albums/${albumId}?${params.toString()}`;
 }
 
 export async function updatePhotoAction(formData: FormData) {
@@ -141,5 +151,5 @@ export async function deletePhotoAction(formData: FormData) {
     );
   }
 
-  redirect(getAlbumPhotosHref(rallyEventId, albumId));
+  redirect(getAlbumPhotosHref(rallyEventId, albumId, "photo-deleted"));
 }

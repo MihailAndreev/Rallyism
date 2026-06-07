@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { useFormStatus } from "react-dom";
+import { useMemo, useRef, useState } from "react";
+
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export type AlbumMediaGridItem = {
   id: number;
@@ -34,16 +35,23 @@ function getTitle(item: AlbumMediaGridItem) {
   return item.title ?? (item.type === "video" ? "YouTube video" : "Photo");
 }
 
-function DeleteButton({ selectedCount }: { selectedCount: number }) {
-  const { pending } = useFormStatus();
-
+function DeleteButton({
+  onClick,
+  selectedCount,
+  submitting,
+}: {
+  onClick: () => void;
+  selectedCount: number;
+  submitting: boolean;
+}) {
   return (
     <button
-      type="submit"
-      disabled={pending || selectedCount === 0}
+      type="button"
+      disabled={submitting || selectedCount === 0}
       className="inline-flex h-9 items-center justify-center rounded-md border border-red-200 bg-red-50 px-3 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-45"
+      onClick={onClick}
     >
-      {pending ? "Deleting..." : "Delete selected"}
+      {submitting ? "Deleting..." : "Delete selected"}
     </button>
   );
 }
@@ -54,7 +62,10 @@ export function AlbumMediaGrid({
   items,
   rallyEventId,
 }: AlbumMediaGridProps) {
+  const formRef = useRef<HTMLFormElement>(null);
   const [manageMode, setManageMode] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [selectedPhotoIds, setSelectedPhotoIds] = useState<number[]>([]);
   const manageablePhotoIds = useMemo(
     () =>
@@ -76,12 +87,23 @@ export function AlbumMediaGrid({
   function toggleManageMode() {
     setManageMode((current) => !current);
     setSelectedPhotoIds([]);
+    setShowDeleteDialog(false);
+  }
+
+  function submitBulkDelete() {
+    if (selectedCount === 0 || submitting) {
+      return;
+    }
+
+    setSubmitting(true);
+    formRef.current?.requestSubmit();
   }
 
   return (
     <div className="space-y-4">
       {manageablePhotoIds.length > 0 ? (
         <form
+          ref={formRef}
           action={action}
           className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-zinc-200 bg-white px-3 py-3"
           onSubmit={(event) => {
@@ -90,15 +112,7 @@ export function AlbumMediaGrid({
               return;
             }
 
-            if (
-              !window.confirm(
-                `Delete ${selectedCount} selected photo${
-                  selectedCount === 1 ? "" : "s"
-                }? This cannot be undone.`,
-              )
-            ) {
-              event.preventDefault();
-            }
+            setSubmitting(true);
           }}
         >
           <input type="hidden" name="rallyEventId" value={rallyEventId} />
@@ -126,9 +140,33 @@ export function AlbumMediaGrid({
             ) : null}
           </div>
 
-          {manageMode ? <DeleteButton selectedCount={selectedCount} /> : null}
+          {manageMode ? (
+            <DeleteButton
+              selectedCount={selectedCount}
+              submitting={submitting}
+              onClick={() => setShowDeleteDialog(true)}
+            />
+          ) : null}
         </form>
       ) : null}
+
+      <ConfirmDialog
+        open={showDeleteDialog}
+        title="Delete selected photos?"
+        description={`Delete ${selectedCount} selected photo${
+          selectedCount === 1 ? "" : "s"
+        } from this album. This cannot be undone.`}
+        confirmLabel="Delete photos"
+        pendingLabel="Deleting..."
+        destructive
+        pending={submitting}
+        onCancel={() => {
+          if (!submitting) {
+            setShowDeleteDialog(false);
+          }
+        }}
+        onConfirm={submitBulkDelete}
+      />
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:gap-3 lg:grid-cols-4 xl:grid-cols-6">
         {items.map((item) =>

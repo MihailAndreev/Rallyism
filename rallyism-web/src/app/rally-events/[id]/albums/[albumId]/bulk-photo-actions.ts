@@ -3,11 +3,7 @@
 import { redirect } from "next/navigation";
 
 import { requireContributor } from "@/lib/auth/authorization";
-import {
-  bulkDeletePhotos,
-  MediaStorageCleanupError,
-  PhotoValidationError,
-} from "@/services/rally-events";
+import { bulkDeletePhotos } from "@/services/rally-events";
 
 function getId(formData: FormData, name: string) {
   const id = Number(formData.get(name));
@@ -26,16 +22,17 @@ function getAlbumPhotosHref(input: {
   rallyEventId: number;
   albumId: number;
   deleted?: number;
-  error?: string;
+  failed?: boolean;
 }) {
   const params = new URLSearchParams({ filter: "photos" });
 
   if (input.deleted) {
-    params.set("bulkDeleted", String(input.deleted));
+    params.set("toast", "photos-deleted");
+    params.set("count", String(input.deleted));
   }
 
-  if (input.error) {
-    params.set("bulkError", input.error);
+  if (input.failed) {
+    params.set("toast", "photos-delete-failed");
   }
 
   return `/rally-events/${input.rallyEventId}/albums/${input.albumId}?${params.toString()}`;
@@ -67,14 +64,8 @@ export async function bulkDeletePhotosAction(formData: FormData) {
       mediaIds: getPhotoIds(formData),
       currentUser: user,
     });
-  } catch (error) {
-    const message =
-      error instanceof PhotoValidationError ||
-      error instanceof MediaStorageCleanupError
-        ? error.message
-        : "The selected photos could not be deleted.";
-
-    redirect(getAlbumPhotosHref({ rallyEventId, albumId, error: message }));
+  } catch {
+    redirect(getAlbumPhotosHref({ rallyEventId, albumId, failed: true }));
   }
 
   if (!result || result.status === "not-found") {
@@ -86,7 +77,7 @@ export async function bulkDeletePhotosAction(formData: FormData) {
       getAlbumPhotosHref({
         rallyEventId,
         albumId,
-        error: "You cannot delete one or more selected photos.",
+        failed: true,
       }),
     );
   }
@@ -96,7 +87,7 @@ export async function bulkDeletePhotosAction(formData: FormData) {
       getAlbumPhotosHref({
         rallyEventId,
         albumId,
-        error: "The selected photos could not be deleted.",
+        failed: true,
       }),
     );
   }

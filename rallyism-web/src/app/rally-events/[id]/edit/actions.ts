@@ -130,5 +130,5 @@ export async function deleteRallyEventAction(formData: FormData) {
     redirect(getErrorHref(eventId, "You cannot delete this rally event."));
   }
 
-  redirect("/dashboard");
+  redirect("/dashboard?toast=event-deleted");
 }

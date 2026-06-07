@@ -130,5 +130,5 @@ export async function deleteAlbumAction(formData: FormData) {
     redirect(getErrorHref(rallyEventId, albumId, "You cannot delete this album."));
   }
 
-  redirect(`/rally-events/${rallyEventId}`);
+  redirect(`/rally-events/${rallyEventId}?toast=album-deleted`);
 }

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
+import { ToastFromSearchParams } from "@/components/ui/toast-from-search-params";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -31,6 +33,9 @@ export default function RootLayout({
     >
       <body className="flex min-h-full flex-col bg-stone-50 text-zinc-950">
         <Header />
+        <Suspense fallback={null}>
+          <ToastFromSearchParams />
+        </Suspense>
         <main className="flex-1">{children}</main>
         <Footer />
       </body>
