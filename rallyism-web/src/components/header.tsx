@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 import { logoutAction } from "@/app/logout/actions";
 import { canContribute, isAdmin } from "@/lib/auth/authorization";
@@ -12,9 +13,17 @@ export async function Header() {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-4 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
         <Link
           href="/"
-          className="text-xl font-semibold tracking-normal text-zinc-950"
+          className="inline-flex items-center gap-2 text-xl font-semibold tracking-normal text-zinc-950"
         >
-          Rallyism
+          <Image
+            src="/images/rallyism-logo.png"
+            alt="Rallyism"
+            width={48}
+            height={52}
+            priority
+            className="h-12 w-auto"
+          />
+          <span>Rallyism</span>
         </Link>
         <nav aria-label="Primary navigation" className="flex flex-wrap gap-2">
           <Link

@@ -19,6 +19,10 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Rallyism",
   description: "Your personal rally memories gallery.",
+  icons: {
+    icon: "/images/rallyism-car-icon.png",
+    apple: "/images/rallyism-car-icon.png",
+  },
 };
 
 export default function RootLayout({
