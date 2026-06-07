@@ -1,6 +1,5 @@
 import Link from "next/link";
 
-import { RallyEventStateBadge } from "@/components/rally-events/rally-event-state-badge";
 import { RallyEventStats } from "@/components/rally-events/rally-event-stats";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getPublicRallyEventsPage } from "@/services/rally-events";
@@ -37,7 +36,6 @@ function PublicRallyEventCard({ event }: { event: RallyEventSummary }) {
       </Link>
       <div className="flex flex-1 flex-col gap-5 p-5">
         <div className="flex flex-wrap items-center gap-2">
-          <RallyEventStateBadge state={event.state} />
           {event.featured ? (
             <span className="rounded-md border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700">
               Featured

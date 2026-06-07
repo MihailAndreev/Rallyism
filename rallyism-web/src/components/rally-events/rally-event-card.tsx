@@ -1,7 +1,6 @@
 import Link from "next/link";
 
 import { RallyEventMetaRow } from "@/components/rally-events/rally-event-meta-row";
-import { RallyEventStateBadge } from "@/components/rally-events/rally-event-state-badge";
 import { RallyEventStats } from "@/components/rally-events/rally-event-stats";
 import type { RallyEventSummary } from "@/services/rally-events";
 
@@ -62,7 +61,6 @@ export function RallyEventCard({
       ) : null}
       <div className="space-y-5 p-5">
         <div className="flex flex-wrap items-center gap-2">
-          <RallyEventStateBadge state={event.state} />
           <span className="rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-semibold capitalize text-zinc-600">
             {event.visibility}
           </span>

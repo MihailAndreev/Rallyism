@@ -7,7 +7,6 @@ import { MediaPreviewGrid } from "@/components/rally-events/media-preview-grid";
 import { RallyAccessDenied } from "@/components/rally-events/rally-access-denied";
 import { RallyEventHeader } from "@/components/rally-events/rally-event-header";
 import { RallyEventMeta } from "@/components/rally-events/rally-event-meta";
-import { RallyEventStateBadge } from "@/components/rally-events/rally-event-state-badge";
 import { RallyEventStats } from "@/components/rally-events/rally-event-stats";
 import { ShareRallyLinkButton } from "@/components/rally-events/share-rally-link-button";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -115,7 +114,6 @@ export default async function RallyEventPage({ params }: RallyEventPageProps) {
         <aside className="space-y-5 lg:sticky lg:top-6">
           <section className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
             <div className="flex flex-wrap gap-2">
-              <RallyEventStateBadge state={event.state} />
               <span className="rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-semibold capitalize text-zinc-600">
                 {event.visibility}
               </span>

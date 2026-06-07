@@ -6,7 +6,6 @@ import { canContribute, isAdmin } from "@/lib/auth/authorization";
 import { deleteR2Object } from "@/lib/storage/r2";
 import type { AuthUser } from "@/services/users";
 
-export type RallyEventState = "upcoming" | "current" | "past";
 export type RallyEventChampionship = "WRC" | "ERC" | "national" | "other";
 export type RallyEventVisibility = "private" | "public" | "unlisted";
 
@@ -35,7 +34,6 @@ export type RallyEventSummary = {
   createdAt: Date;
   updatedAt: Date;
   creatorName: string | null;
-  state: RallyEventState;
 } & RallyEventSummaryCounts;
 
 export type RallyEventAlbum = {
@@ -305,10 +303,6 @@ export type EditablePhotoResult =
 
 const validChampionships = ["WRC", "ERC", "national", "other"] as const;
 const validVisibilities = ["private", "public", "unlisted"] as const;
-
-function toDateOnly(value: Date) {
-  return new Date(value.getFullYear(), value.getMonth(), value.getDate());
-}
 
 function parseDateOnly(value: string | null) {
   if (!value) {
@@ -599,36 +593,7 @@ function toRallyEventSummary(
     ...event,
     ...counts,
     creatorName,
-    state: getRallyEventState({
-      startDate: event.startDate,
-      endDate: event.endDate,
-    }),
   };
-}
-
-export function getRallyEventState(input: {
-  startDate: string | null;
-  endDate: string | null;
-  today?: Date;
-}): RallyEventState {
-  const startDate = parseDateOnly(input.startDate);
-
-  if (!startDate) {
-    return "past";
-  }
-
-  const endDate = parseDateOnly(input.endDate) ?? startDate;
-  const today = toDateOnly(input.today ?? new Date());
-
-  if (startDate > today) {
-    return "upcoming";
-  }
-
-  if (endDate < today) {
-    return "past";
-  }
-
-  return "current";
 }
 
 export async function getRallyEventSummaryCounts(
@@ -855,12 +820,11 @@ export async function getDashboardRallyEvents() {
   });
 
   return {
-    activeEvents: summaries
-      .filter((event) => event.state !== "past")
-      .sort((a, b) => getSortTime(a.startDate) - getSortTime(b.startDate)),
-    pastEvents: summaries
-      .filter((event) => event.state === "past")
-      .sort((a, b) => getSortTime(b.startDate) - getSortTime(a.startDate)),
+    events: summaries.sort(
+      (a, b) =>
+        getSortTime(b.startDate) - getSortTime(a.startDate) ||
+        b.createdAt.getTime() - a.createdAt.getTime(),
+    ),
   };
 }
 

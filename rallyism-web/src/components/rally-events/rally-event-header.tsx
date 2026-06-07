@@ -1,6 +1,5 @@
 import Link from "next/link";
 
-import { RallyEventStateBadge } from "@/components/rally-events/rally-event-state-badge";
 import type { RallyEventSummary } from "@/services/rally-events";
 
 export function RallyEventHeader({
@@ -24,7 +23,6 @@ export function RallyEventHeader({
       ) : null}
       <div className="space-y-5 p-6 sm:p-8">
         <div className="flex flex-wrap items-center gap-2">
-          <RallyEventStateBadge state={event.state} />
           <span className="rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-semibold capitalize text-zinc-600">
             {event.visibility}
           </span>

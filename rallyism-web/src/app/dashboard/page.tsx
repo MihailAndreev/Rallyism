@@ -18,7 +18,7 @@ export default async function DashboardPage() {
     redirect("/pending-approval");
   }
 
-  const { activeEvents, pastEvents } = await getDashboardRallyEvents();
+  const { events } = await getDashboardRallyEvents();
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-10 px-4 py-10 sm:px-6 lg:px-8">
@@ -61,45 +61,22 @@ export default async function DashboardPage() {
       <section className="space-y-4">
         <div>
           <h2 className="text-2xl font-semibold tracking-normal text-zinc-950">
-            Upcoming & Current Rally Events
+            Rally Events
           </h2>
           <p className="mt-2 text-sm text-zinc-500">
-            Sorted by the first rally to come.
+            Your rally memories, newest first.
           </p>
         </div>
-        {activeEvents.length > 0 ? (
-          <div className="grid gap-5 lg:grid-cols-2">
-            {activeEvents.map((event) => (
+        {events.length > 0 ? (
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {events.map((event) => (
               <RallyEventCard key={event.id} event={event} />
             ))}
           </div>
         ) : (
           <EmptyDashboardSection
-            title="No upcoming rally events yet."
-            description="Upcoming and current rally events will appear here."
-          />
-        )}
-      </section>
-
-      <section className="space-y-4">
-        <div>
-          <h2 className="text-2xl font-semibold tracking-normal text-zinc-950">
-            Rally Memories Archive
-          </h2>
-          <p className="mt-2 text-sm text-zinc-500">
-            Past rally events, newest memories first.
-          </p>
-        </div>
-        {pastEvents.length > 0 ? (
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {pastEvents.map((event) => (
-              <RallyEventCard key={event.id} event={event} compact />
-            ))}
-          </div>
-        ) : (
-          <EmptyDashboardSection
-            title="No rally memories in the archive yet."
-            description="Past rally events will appear here after they are added."
+            title="No rally events yet."
+            description="Create a rally event to start building your memories."
           />
         )}
       </section>
