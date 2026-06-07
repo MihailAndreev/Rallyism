@@ -18,8 +18,25 @@ type EditPhotoPageProps = {
   }>;
   searchParams?: Promise<{
     error?: string;
+    returnTo?: string;
   }>;
 };
+
+function getSafeAlbumReturnPath(input: {
+  albumId: number;
+  rallyEventId: number;
+  value: string | undefined;
+}) {
+  const fallback = `/rally-events/${input.rallyEventId}/albums/${input.albumId}?filter=photos`;
+
+  if (!input.value || !input.value.startsWith("/") || input.value.startsWith("//")) {
+    return fallback;
+  }
+
+  const expectedPrefix = `/rally-events/${input.rallyEventId}/albums/${input.albumId}`;
+
+  return input.value.startsWith(expectedPrefix) ? input.value : fallback;
+}
 
 export default async function EditPhotoPage({
   params,
@@ -69,7 +86,11 @@ export default async function EditPhotoPage({
     );
   }
 
-  const albumPhotosHref = `/rally-events/${rallyEventId}/albums/${parsedAlbumId}?filter=photos`;
+  const albumPhotosHref = getSafeAlbumReturnPath({
+    rallyEventId,
+    albumId: parsedAlbumId,
+    value: resolvedSearchParams?.returnTo,
+  });
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
@@ -99,6 +120,7 @@ export default async function EditPhotoPage({
           error={resolvedSearchParams?.error}
           photo={result.photo}
           rallyEventId={rallyEventId}
+          returnTo={albumPhotosHref}
           submitLabel="Save changes"
         />
       </section>

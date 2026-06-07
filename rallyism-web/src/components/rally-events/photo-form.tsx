@@ -11,6 +11,7 @@ type PhotoFormProps = {
   deleteAction?: (formData: FormData) => void | Promise<void>;
   error?: string;
   photo: EditablePhotoItem;
+  returnTo: string;
   submitLabel: string;
 };
 
@@ -54,6 +55,7 @@ export function PhotoForm({
   deleteAction,
   error,
   photo,
+  returnTo,
   submitLabel,
 }: PhotoFormProps) {
   const previewImageUrl = getPreviewImageUrl(photo);
@@ -81,6 +83,7 @@ export function PhotoForm({
         <input type="hidden" name="rallyEventId" value={rallyEventId} />
         <input type="hidden" name="albumId" value={albumId} />
         <input type="hidden" name="mediaId" value={photo.id} />
+        <input type="hidden" name="returnTo" value={returnTo} />
 
         {error ? (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
@@ -169,6 +172,7 @@ export function PhotoForm({
           <input type="hidden" name="rallyEventId" value={rallyEventId} />
           <input type="hidden" name="albumId" value={albumId} />
           <input type="hidden" name="mediaId" value={photo.id} />
+          <input type="hidden" name="returnTo" value={returnTo} />
           <button
             type="submit"
             className="inline-flex h-11 items-center justify-center rounded-md border border-red-200 bg-red-50 px-5 text-sm font-semibold text-red-700 shadow-sm transition hover:bg-red-100"

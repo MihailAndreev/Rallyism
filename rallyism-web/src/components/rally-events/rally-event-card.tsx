@@ -1,39 +1,7 @@
 import Link from "next/link";
 
-import { RallyEventMetaRow } from "@/components/rally-events/rally-event-meta-row";
 import { RallyEventStats } from "@/components/rally-events/rally-event-stats";
 import type { RallyEventSummary } from "@/services/rally-events";
-
-function formatChampionship(championship: RallyEventSummary["championship"]) {
-  if (championship === "national") {
-    return "National rally";
-  }
-
-  if (championship === "other") {
-    return "Other";
-  }
-
-  return championship;
-}
-
-function formatDate(value: string | null) {
-  if (!value) {
-    return "Date TBC";
-  }
-
-  return new Intl.DateTimeFormat("en", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(`${value}T00:00:00`));
-}
-
-function formatDateRange(startDate: string | null, endDate: string | null) {
-  const start = formatDate(startDate);
-  const end = endDate && endDate !== startDate ? formatDate(endDate) : null;
-
-  return end ? `${start} - ${end}` : start;
-}
 
 export function RallyEventCard({
   event,
@@ -42,10 +10,6 @@ export function RallyEventCard({
   event: RallyEventSummary;
   compact?: boolean;
 }) {
-  const location = event.region
-    ? `${event.country} / ${event.region}`
-    : event.country;
-
   return (
     <Link
       href={`/rally-events/${event.id}`}
@@ -77,19 +41,6 @@ export function RallyEventCard({
           </h2>
           <p className="mt-1 text-sm text-zinc-500">{event.rallyName}</p>
         </div>
-
-        <dl className="grid gap-4 sm:grid-cols-2">
-          <RallyEventMetaRow
-            label="Championship"
-            value={formatChampionship(event.championship)}
-          />
-          <RallyEventMetaRow label="Season" value={event.seasonYear} />
-          <RallyEventMetaRow label="Location" value={location} />
-          <RallyEventMetaRow
-            label="Dates"
-            value={formatDateRange(event.startDate, event.endDate)}
-          />
-        </dl>
 
         <RallyEventStats
           albumsCount={event.albumsCount}

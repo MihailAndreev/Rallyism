@@ -41,24 +41,41 @@ function getErrorHref(
   albumId: number,
   mediaId: number,
   message: string,
+  returnTo?: string,
 ) {
   const params = new URLSearchParams({ error: message });
+
+  if (returnTo) {
+    params.set("returnTo", returnTo);
+  }
 
   return `/rally-events/${rallyEventId}/albums/${albumId}/photos/${mediaId}/edit?${params.toString()}`;
 }
 
-function getAlbumPhotosHref(
-  rallyEventId: number,
-  albumId: number,
-  toast?: "photo-deleted",
-) {
-  const params = new URLSearchParams({ filter: "photos" });
+function getSafeAlbumReturnPath(formData: FormData, rallyEventId: number, albumId: number) {
+  const fallback = `/rally-events/${rallyEventId}/albums/${albumId}?filter=photos`;
+  const rawReturnTo = String(formData.get("returnTo") ?? "");
 
-  if (toast) {
-    params.set("toast", toast);
+  if (
+    !rawReturnTo ||
+    !rawReturnTo.startsWith("/") ||
+    rawReturnTo.startsWith("//")
+  ) {
+    return fallback;
   }
 
-  return `/rally-events/${rallyEventId}/albums/${albumId}?${params.toString()}`;
+  const expectedPrefix = `/rally-events/${rallyEventId}/albums/${albumId}`;
+
+  return rawReturnTo.startsWith(expectedPrefix) ? rawReturnTo : fallback;
+}
+
+function appendToastToHref(href: string, toast: "photo-deleted") {
+  const [pathname, query = ""] = href.split("?");
+  const params = new URLSearchParams(query);
+
+  params.set("toast", toast);
+
+  return `${pathname}?${params.toString()}`;
 }
 
 export async function updatePhotoAction(formData: FormData) {
@@ -74,6 +91,7 @@ export async function updatePhotoAction(formData: FormData) {
     redirect("/dashboard");
   }
 
+  const returnTo = getSafeAlbumReturnPath(formData, rallyEventId, albumId);
   let status: "allowed" | "not-found" | "access-denied" | null = null;
 
   try {
@@ -93,18 +111,26 @@ export async function updatePhotoAction(formData: FormData) {
         ? error.message
         : "The photo could not be updated.";
 
-    redirect(getErrorHref(rallyEventId, albumId, mediaId, message));
+    redirect(getErrorHref(rallyEventId, albumId, mediaId, message, returnTo));
   }
 
   if (status === "not-found") {
-    redirect(getAlbumPhotosHref(rallyEventId, albumId));
+    redirect(returnTo);
   }
 
   if (status === "access-denied") {
-    redirect(getErrorHref(rallyEventId, albumId, mediaId, "You cannot edit this photo."));
+    redirect(
+      getErrorHref(
+        rallyEventId,
+        albumId,
+        mediaId,
+        "You cannot edit this photo.",
+        returnTo,
+      ),
+    );
   }
 
-  redirect(getAlbumPhotosHref(rallyEventId, albumId));
+  redirect(returnTo);
 }
 
 export async function deletePhotoAction(formData: FormData) {
@@ -120,6 +146,7 @@ export async function deletePhotoAction(formData: FormData) {
     redirect("/dashboard");
   }
 
+  const returnTo = getSafeAlbumReturnPath(formData, rallyEventId, albumId);
   let status: "allowed" | "not-found" | "access-denied" | null = null;
 
   try {
@@ -138,18 +165,24 @@ export async function deletePhotoAction(formData: FormData) {
         ? error.message
         : "The photo could not be deleted.";
 
-    redirect(getErrorHref(rallyEventId, albumId, mediaId, message));
+    redirect(getErrorHref(rallyEventId, albumId, mediaId, message, returnTo));
   }
 
   if (status === "not-found") {
-    redirect(getAlbumPhotosHref(rallyEventId, albumId));
+    redirect(returnTo);
   }
 
   if (status === "access-denied") {
     redirect(
-      getErrorHref(rallyEventId, albumId, mediaId, "You cannot delete this photo."),
+      getErrorHref(
+        rallyEventId,
+        albumId,
+        mediaId,
+        "You cannot delete this photo.",
+        returnTo,
+      ),
     );
   }
 
-  redirect(getAlbumPhotosHref(rallyEventId, albumId, "photo-deleted"));
+  redirect(appendToastToHref(returnTo, "photo-deleted"));
 }

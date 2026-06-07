@@ -22,8 +22,8 @@ const championships = [
 ];
 
 const visibilities = [
-  { value: "private", label: "Private" },
   { value: "public", label: "Public" },
+  { value: "private", label: "Private" },
   { value: "unlisted", label: "Unlisted" },
 ];
 
@@ -164,7 +164,7 @@ export function RallyEventForm({
         <Field label="Visibility">
           <select
             className={inputClass}
-            defaultValue={event?.visibility ?? "private"}
+            defaultValue={event?.visibility ?? "public"}
             name="visibility"
           >
             {visibilities.map((option) => (

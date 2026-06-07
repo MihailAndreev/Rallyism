@@ -282,6 +282,12 @@ export default async function AlbumPage({
   const canBrowseTags = canContribute(user);
   const uploadResultMessage = getUploadResultMessage(resolvedSearchParams);
   const bulkDeleteResultMessage = getBulkDeleteResultMessage(resolvedSearchParams);
+  const mediaPageHref = getAlbumPageHref({
+    rallyEventId,
+    albumId: parsedAlbumId,
+    filter: mediaPage.filter,
+    page: mediaPage.currentPage,
+  });
   const galleryItems: AlbumMediaGridItem[] = mediaPage.items.map((item) => {
     const canManage =
       item.type === "video"
@@ -310,7 +316,9 @@ export default async function AlbumPage({
       editHref:
         item.type === "video"
           ? `/rally-events/${rallyEventId}/albums/${item.albumId}/videos/${item.id}/edit`
-          : `/rally-events/${rallyEventId}/albums/${item.albumId}/photos/${item.id}/edit`,
+          : `/rally-events/${rallyEventId}/albums/${item.albumId}/photos/${item.id}/edit?${new URLSearchParams(
+              { returnTo: mediaPageHref },
+            ).toString()}`,
     };
   });
   const viewerPhotos = mediaPage.items
