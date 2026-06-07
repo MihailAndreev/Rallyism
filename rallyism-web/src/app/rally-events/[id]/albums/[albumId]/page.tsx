@@ -32,6 +32,8 @@ type AlbumPageProps = {
     uploadStatus?: string;
     uploaded?: string;
     failed?: string;
+    uploadFailedDetails?: string;
+    uploadWarnings?: string;
     bulkDeleted?: string;
     bulkError?: string;
   }>;
@@ -102,6 +104,8 @@ function getUploadResultMessage(searchParams: Awaited<AlbumPageProps["searchPara
     return {
       tone: "success" as const,
       text: `${uploadedText}.`,
+      failedDetails: getUploadFailedDetails(searchParams?.uploadFailedDetails),
+      warnings: getUploadWarnings(searchParams?.uploadWarnings),
     };
   }
 
@@ -109,6 +113,8 @@ function getUploadResultMessage(searchParams: Awaited<AlbumPageProps["searchPara
     return {
       tone: "warning" as const,
       text: `${uploadedText}${failedText}.`,
+      failedDetails: getUploadFailedDetails(searchParams?.uploadFailedDetails),
+      warnings: getUploadWarnings(searchParams?.uploadWarnings),
     };
   }
 
@@ -116,10 +122,84 @@ function getUploadResultMessage(searchParams: Awaited<AlbumPageProps["searchPara
     return {
       tone: "error" as const,
       text: "No photos were uploaded. Check the file format and size, then try again.",
+      failedDetails: getUploadFailedDetails(searchParams?.uploadFailedDetails),
+      warnings: getUploadWarnings(searchParams?.uploadWarnings),
     };
   }
 
   return null;
+}
+
+function getUploadFailedDetails(value: string | undefined) {
+  if (!value) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(value) as unknown;
+
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed
+      .map((item) => {
+        if (
+          typeof item === "object" &&
+          item !== null &&
+          "filename" in item &&
+          "error" in item &&
+          typeof item.filename === "string" &&
+          typeof item.error === "string"
+        ) {
+          return {
+            filename: item.filename.slice(0, 255),
+            error: item.error.slice(0, 300),
+          };
+        }
+
+        return null;
+      })
+      .filter((item): item is { filename: string; error: string } => Boolean(item));
+  } catch {
+    return [];
+  }
+}
+
+function getUploadWarnings(value: string | undefined) {
+  if (!value) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(value) as unknown;
+
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed
+      .map((item) => {
+        if (
+          typeof item === "object" &&
+          item !== null &&
+          "filename" in item &&
+          "message" in item &&
+          typeof item.filename === "string" &&
+          typeof item.message === "string"
+        ) {
+          return {
+            filename: item.filename.slice(0, 255),
+            message: item.message.slice(0, 350),
+          };
+        }
+
+        return null;
+      })
+      .filter((item): item is { filename: string; message: string } => Boolean(item));
+  } catch {
+    return [];
+  }
 }
 
 function getBulkDeleteResultMessage(
@@ -312,9 +392,34 @@ export default async function AlbumPage({
 
       {uploadResultMessage ? (
         <div
-          className={`rounded-md border px-4 py-3 text-sm font-medium ${getResultClass(uploadResultMessage.tone)}`}
+          className={`space-y-3 rounded-md border px-4 py-3 text-sm font-medium ${getResultClass(uploadResultMessage.tone)}`}
         >
-          {uploadResultMessage.text}
+          <p>{uploadResultMessage.text}</p>
+          {uploadResultMessage.failedDetails.length > 0 ? (
+            <div className="space-y-2">
+              <p className="font-semibold">Failed files</p>
+              <ul className="space-y-1">
+                {uploadResultMessage.failedDetails.map((item) => (
+                  <li key={`${item.filename}-${item.error}`}>
+                    <span className="font-semibold">{item.filename}</span>:{" "}
+                    {item.error}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {uploadResultMessage.warnings.length > 0 ? (
+            <div className="space-y-2">
+              <p className="font-semibold">Warnings</p>
+              <ul className="space-y-1">
+                {uploadResultMessage.warnings.map((item) => (
+                  <li key={`${item.filename}-${item.message}`}>
+                    {item.message}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </div>
       ) : null}
 

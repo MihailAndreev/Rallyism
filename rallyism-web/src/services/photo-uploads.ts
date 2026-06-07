@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import sharp from "sharp";
 
 import { db } from "@/db";
@@ -28,11 +28,17 @@ type FailedPhotoResult = {
   error: string;
 };
 
+type PhotoUploadWarning = {
+  filename: string;
+  message: string;
+};
+
 export type PhotoUploadResult = {
   batchId: number;
   status: "completed" | "completed_with_errors" | "failed";
   uploaded: UploadedPhotoResult[];
   failed: FailedPhotoResult[];
+  warnings: PhotoUploadWarning[];
 };
 
 export class PhotoUploadValidationError extends Error {
@@ -93,7 +99,7 @@ async function saveProcessedPhoto(input: {
 
   const originalFilename = getOriginalFilename(input.file);
   const buffer = Buffer.from(await input.file.arrayBuffer());
-  const image = sharp(buffer).rotate();
+  const image = sharp(buffer, { failOn: "none" }).rotate();
   const uniquePart = randomUUID();
   const baseObjectKey = `rally-events/${input.rallyEventId}/albums/${input.albumId}/photos`;
   const displayImageR2Key = `${baseObjectKey}/${uniquePart}-main.webp`;
@@ -217,8 +223,33 @@ export async function uploadAlbumPhotos(input: {
 
   const uploaded: UploadedPhotoResult[] = [];
   const failed: FailedPhotoResult[] = [];
+  const warnings: PhotoUploadWarning[] = [];
+  const uploadFilenames = input.files.map(getOriginalFilename);
+  const existingFilenameRows =
+    uploadFilenames.length > 0
+      ? await db
+          .select({ originalFilename: mediaItems.originalFilename })
+          .from(mediaItems)
+          .where(
+            and(
+              eq(mediaItems.albumId, input.albumId),
+              eq(mediaItems.type, "photo"),
+              inArray(
+                mediaItems.originalFilename,
+                uploadFilenames.filter(Boolean),
+              ),
+            ),
+          )
+      : [];
+  const existingAlbumFilenames = new Set(
+    existingFilenameRows
+      .map((row) => row.originalFilename)
+      .filter((filename): filename is string => Boolean(filename)),
+  );
 
   for (const file of input.files) {
+    const filename = getOriginalFilename(file);
+
     try {
       const result = await saveProcessedPhoto({
         file,
@@ -229,9 +260,15 @@ export async function uploadAlbumPhotos(input: {
       });
 
       uploaded.push(result);
+      if (existingAlbumFilenames.has(filename)) {
+        warnings.push({
+          filename,
+          message: `${filename} was uploaded, but a file with this name already exists in this album.`,
+        });
+      }
     } catch (error) {
       failed.push({
-        filename: getOriginalFilename(file),
+        filename,
         error:
           error instanceof Error
             ? error.message
@@ -262,5 +299,6 @@ export async function uploadAlbumPhotos(input: {
     status,
     uploaded,
     failed,
+    warnings,
   };
 }

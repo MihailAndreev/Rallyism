@@ -37,6 +37,8 @@ function getAlbumResultHref(input: {
   status: string;
   uploaded: number;
   failed: number;
+  failedDetails: PhotoUploadResult["failed"];
+  warnings: PhotoUploadResult["warnings"];
 }) {
   const params = new URLSearchParams({
     filter: "photos",
@@ -44,6 +46,14 @@ function getAlbumResultHref(input: {
     uploaded: String(input.uploaded),
     failed: String(input.failed),
   });
+
+  if (input.failedDetails.length > 0) {
+    params.set("uploadFailedDetails", JSON.stringify(input.failedDetails));
+  }
+
+  if (input.warnings.length > 0) {
+    params.set("uploadWarnings", JSON.stringify(input.warnings));
+  }
 
   return `/rally-events/${input.rallyEventId}/albums/${input.albumId}?${params.toString()}`;
 }
@@ -118,6 +128,8 @@ export async function uploadPhotosAction(formData: FormData) {
       status: result.status,
       uploaded: result.uploaded.length,
       failed: result.failed.length,
+      failedDetails: result.failed,
+      warnings: result.warnings,
     }),
   );
 }
