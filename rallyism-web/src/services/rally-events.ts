@@ -1,7 +1,7 @@
-import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 
 import { db } from "@/db";
-import { albums, mediaItems, rallyEvents, users } from "@/db/schema";
+import { albums, mediaItems, mediaTags, rallyEvents, tags, users } from "@/db/schema";
 import { canContribute, isAdmin } from "@/lib/auth/authorization";
 import { deleteR2Object } from "@/lib/storage/r2";
 import type { AuthUser } from "@/services/users";
@@ -14,6 +14,12 @@ export type RallyEventSummaryCounts = {
   mediaCount: number;
   photosCount: number;
   videosCount: number;
+};
+
+export type TagSummary = {
+  id: number;
+  name: string;
+  slug: string;
 };
 
 export type RallyEventSummary = {
@@ -98,6 +104,7 @@ export type PhotoFormInput = {
   location: string;
   dateTaken: string;
   sortOrder: string;
+  tags: string;
 };
 
 export type PhotoFormValues = {
@@ -106,6 +113,7 @@ export type PhotoFormValues = {
   location: string | null;
   dateTaken: Date | null;
   sortOrder: number;
+  tagNames: string[];
 };
 
 export type AlbumMediaFilter = "all" | "photos" | "videos";
@@ -116,6 +124,7 @@ export type AlbumMediaItem = RallyEventMediaPreviewItem & {
   sortOrder: number;
   createdById: number | null;
   createdAt: Date;
+  tags: TagSummary[];
 };
 
 export type EditableVideoItem = {
@@ -152,7 +161,36 @@ export type EditablePhotoItem = {
   originalFilename: string | null;
   createdAt: Date;
   updatedAt: Date;
+  tags: TagSummary[];
 };
+
+export type TaggedPhotoItem = {
+  id: number;
+  albumId: number;
+  rallyEventId: number;
+  title: string | null;
+  caption: string | null;
+  thumbnailImageUrl: string | null;
+  displayImageUrl: string | null;
+  originalImageUrl: string | null;
+  eventTitle: string;
+  albumTitle: string;
+  createdAt: Date;
+};
+
+export type TaggedPhotosPage =
+  | { status: "not-found" }
+  | {
+      status: "allowed";
+      tag: TagSummary;
+      items: TaggedPhotoItem[];
+      currentPage: number;
+      pageSize: number;
+      totalPhotos: number;
+      totalPages: number;
+      hasPreviousPage: boolean;
+      hasNextPage: boolean;
+    };
 
 export type RallyEventDetailsResult =
   | { status: "not-found" }
@@ -359,6 +397,244 @@ function normalizeNullableText(value: string) {
   const trimmed = value.trim();
 
   return trimmed ? trimmed : null;
+}
+
+function normalizeTagName(value: string) {
+  return value.trim().replace(/\s+/g, " ");
+}
+
+export function getTagSlug(value: string) {
+  return normalizeTagName(value)
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")
+    .slice(0, 100);
+}
+
+export function parseTagNames(value: string) {
+  const seenSlugs = new Set<string>();
+  const names: string[] = [];
+
+  for (const part of value.split(",")) {
+    const name = normalizeTagName(part);
+    const slug = getTagSlug(name);
+
+    if (!name || !slug || seenSlugs.has(slug)) {
+      continue;
+    }
+
+    seenSlugs.add(slug);
+    names.push(name.slice(0, 80));
+  }
+
+  return names.slice(0, 20);
+}
+
+async function getOrCreateTag(name: string) {
+  const normalizedName = normalizeTagName(name).slice(0, 80);
+  const slug = getTagSlug(normalizedName);
+
+  if (!normalizedName || !slug) {
+    throw new PhotoValidationError("Enter valid tag names.");
+  }
+
+  const [existing] = await db
+    .select()
+    .from(tags)
+    .where(eq(tags.slug, slug))
+    .limit(1);
+
+  if (existing) {
+    return existing;
+  }
+
+  const [created] = await db
+    .insert(tags)
+    .values({ name: normalizedName, slug })
+    .returning();
+
+  return created;
+}
+
+export async function getTagsForMediaItem(mediaItemId: number) {
+  return db
+    .select({
+      id: tags.id,
+      name: tags.name,
+      slug: tags.slug,
+    })
+    .from(mediaTags)
+    .innerJoin(tags, eq(mediaTags.tagId, tags.id))
+    .where(eq(mediaTags.mediaItemId, mediaItemId))
+    .orderBy(asc(tags.name));
+}
+
+async function getTagsByMediaItemIds(mediaItemIds: number[]) {
+  if (mediaItemIds.length === 0) {
+    return new Map<number, TagSummary[]>();
+  }
+
+  const rows = await db
+    .select({
+      mediaItemId: mediaTags.mediaItemId,
+      id: tags.id,
+      name: tags.name,
+      slug: tags.slug,
+    })
+    .from(mediaTags)
+    .innerJoin(tags, eq(mediaTags.tagId, tags.id))
+    .where(inArray(mediaTags.mediaItemId, mediaItemIds))
+    .orderBy(asc(tags.name));
+
+  const tagsByMediaItem = new Map<number, TagSummary[]>();
+
+  for (const row of rows) {
+    const current = tagsByMediaItem.get(row.mediaItemId) ?? [];
+    current.push({ id: row.id, name: row.name, slug: row.slug });
+    tagsByMediaItem.set(row.mediaItemId, current);
+  }
+
+  return tagsByMediaItem;
+}
+
+export async function setMediaItemTags(input: {
+  mediaItemId: number;
+  tagNames: string[];
+}) {
+  const nextTags = await Promise.all(input.tagNames.map(getOrCreateTag));
+
+  await db.delete(mediaTags).where(eq(mediaTags.mediaItemId, input.mediaItemId));
+
+  if (nextTags.length > 0) {
+    await db
+      .insert(mediaTags)
+      .values(
+        nextTags.map((tag) => ({
+          mediaItemId: input.mediaItemId,
+          tagId: tag.id,
+        })),
+      )
+      .onConflictDoNothing();
+  }
+}
+
+export async function searchTags(input: { query?: string; limit?: number } = {}) {
+  const query = normalizeTagName(input.query ?? "");
+  const limit = input.limit ?? 24;
+  const tagQuery = db
+    .select({
+      id: tags.id,
+      name: tags.name,
+      slug: tags.slug,
+    })
+    .from(tags)
+    .$dynamic();
+
+  if (query) {
+    tagQuery.where(ilike(tags.name, `%${query}%`));
+  }
+
+  return tagQuery.orderBy(asc(tags.name)).limit(limit);
+}
+
+export async function getTagBySlug(slug: string) {
+  const [tag] = await db
+    .select({
+      id: tags.id,
+      name: tags.name,
+      slug: tags.slug,
+    })
+    .from(tags)
+    .where(eq(tags.slug, slug))
+    .limit(1);
+
+  return tag ?? null;
+}
+
+function getTaggedPhotoAccessWhere(currentUser: AuthUser) {
+  if (isAdmin(currentUser)) {
+    return undefined;
+  }
+
+  return or(
+    inArray(rallyEvents.visibility, ["public", "unlisted"]),
+    eq(rallyEvents.createdById, currentUser.id),
+  );
+}
+
+export async function getTaggedPhotosPage(input: {
+  slug: string;
+  currentUser: AuthUser;
+  page?: number;
+  pageSize?: number;
+}): Promise<TaggedPhotosPage> {
+  const tag = await getTagBySlug(input.slug);
+
+  if (!tag) {
+    return { status: "not-found" };
+  }
+
+  const pageSize = input.pageSize ?? 24;
+  const requestedPage =
+    input.page && Number.isInteger(input.page) && input.page > 0 ? input.page : 1;
+  const accessWhere = getTaggedPhotoAccessWhere(input.currentUser);
+  const whereClause = accessWhere
+    ? and(
+        eq(mediaTags.tagId, tag.id),
+        eq(mediaItems.type, "photo"),
+        accessWhere,
+      )
+    : and(eq(mediaTags.tagId, tag.id), eq(mediaItems.type, "photo"));
+
+  const [{ totalPhotos }] = await db
+    .select({
+      totalPhotos: sql<number>`count(${mediaItems.id})::int`,
+    })
+    .from(mediaTags)
+    .innerJoin(mediaItems, eq(mediaTags.mediaItemId, mediaItems.id))
+    .innerJoin(rallyEvents, eq(mediaItems.rallyEventId, rallyEvents.id))
+    .where(whereClause);
+
+  const totalPages = Math.max(1, Math.ceil((totalPhotos ?? 0) / pageSize));
+  const currentPage = Math.min(requestedPage, totalPages);
+  const offset = (currentPage - 1) * pageSize;
+
+  const items = await db
+    .select({
+      id: mediaItems.id,
+      albumId: mediaItems.albumId,
+      rallyEventId: mediaItems.rallyEventId,
+      title: mediaItems.title,
+      caption: mediaItems.caption,
+      thumbnailImageUrl: mediaItems.thumbnailImageUrl,
+      displayImageUrl: mediaItems.displayImageUrl,
+      originalImageUrl: mediaItems.originalImageUrl,
+      eventTitle: rallyEvents.title,
+      albumTitle: albums.title,
+      createdAt: mediaItems.createdAt,
+    })
+    .from(mediaTags)
+    .innerJoin(mediaItems, eq(mediaTags.mediaItemId, mediaItems.id))
+    .innerJoin(albums, eq(mediaItems.albumId, albums.id))
+    .innerJoin(rallyEvents, eq(mediaItems.rallyEventId, rallyEvents.id))
+    .where(whereClause)
+    .orderBy(desc(mediaItems.createdAt), asc(mediaItems.id))
+    .limit(pageSize)
+    .offset(offset);
+
+  return {
+    status: "allowed",
+    tag,
+    items,
+    currentPage,
+    pageSize,
+    totalPhotos: totalPhotos ?? 0,
+    totalPages,
+    hasPreviousPage: currentPage > 1,
+    hasNextPage: currentPage < totalPages,
+  };
 }
 
 function isValidDateOnly(value: string) {
@@ -581,6 +857,7 @@ export function validatePhotoInput(input: PhotoFormInput): PhotoFormValues {
     location: normalizeNullableText(input.location),
     dateTaken: parseOptionalDateTime(input.dateTaken),
     sortOrder,
+    tagNames: parseTagNames(input.tags),
   };
 }
 
@@ -790,9 +1067,15 @@ async function getAlbumMediaPage(input: {
     .orderBy(asc(mediaItems.sortOrder), asc(mediaItems.dateTaken), asc(mediaItems.createdAt))
     .limit(pageSize)
     .offset(offset);
+  const tagsByMediaItem = await getTagsByMediaItemIds(
+    items.filter((item) => item.type === "photo").map((item) => item.id),
+  );
 
   return {
-    items,
+    items: items.map((item) => ({
+      ...item,
+      tags: tagsByMediaItem.get(item.id) ?? [],
+    })),
     filter,
     currentPage,
     pageSize,
@@ -1619,11 +1902,16 @@ export async function getEditablePhoto(input: {
     return { status: "access-denied" };
   }
 
+  const photoTags = await getTagsForMediaItem(photo.id);
+
   return {
     status: "allowed",
     event: albumAccess.event,
     album: albumAccess.album,
-    photo,
+    photo: {
+      ...photo,
+      tags: photoTags,
+    },
   };
 }
 
@@ -1668,6 +1956,11 @@ export async function updatePhoto(input: {
       ),
     )
     .returning();
+
+  await setMediaItemTags({
+    mediaItemId: input.mediaId,
+    tagNames: input.values.tagNames,
+  });
 
   return { status: "allowed" as const, photo };
 }

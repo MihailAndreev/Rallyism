@@ -32,6 +32,7 @@ function getFormInput(formData: FormData) {
     location: String(formData.get("location") ?? ""),
     dateTaken: String(formData.get("dateTaken") ?? ""),
     sortOrder: String(formData.get("sortOrder") ?? ""),
+    tags: String(formData.get("tags") ?? ""),
   };
 }
 

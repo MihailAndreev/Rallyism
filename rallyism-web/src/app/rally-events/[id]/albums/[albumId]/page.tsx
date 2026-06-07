@@ -10,6 +10,7 @@ import { AlbumPhotoViewer } from "@/components/rally-events/album-photo-viewer";
 import { RallyAccessDenied } from "@/components/rally-events/rally-access-denied";
 import { formatDate } from "@/components/rally-events/rally-event-format";
 import { RallyEventStats } from "@/components/rally-events/rally-event-stats";
+import { canContribute } from "@/lib/auth/authorization";
 import { getCurrentUser } from "@/lib/auth/session";
 import {
   getAlbumMediaGalleryDetails,
@@ -197,6 +198,7 @@ export default async function AlbumPage({
 
   const { album, event, mediaPage } = result;
   const canManageEvent = userCanManageEvent(event, user);
+  const canBrowseTags = canContribute(user);
   const uploadResultMessage = getUploadResultMessage(resolvedSearchParams);
   const bulkDeleteResultMessage = getBulkDeleteResultMessage(resolvedSearchParams);
   const galleryItems: AlbumMediaGridItem[] = mediaPage.items.map((item) => {
@@ -239,6 +241,7 @@ export default async function AlbumPage({
       thumbnailImageUrl: item.thumbnailImageUrl,
       displayImageUrl: item.displayImageUrl,
       originalImageUrl: item.originalImageUrl,
+      tags: canBrowseTags ? item.tags : [],
     }));
 
   return (

@@ -46,6 +46,12 @@ export default async function DashboardPage() {
             >
               Create rally event
             </Link>
+            <Link
+              href="/tags"
+              className="inline-flex h-10 items-center justify-center rounded-md border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-900 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-100"
+            >
+              Browse tags
+            </Link>
             {isAdmin(user) ? (
               <Link
                 href="/admin/users"

@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { logoutAction } from "@/app/logout/actions";
+import { canContribute } from "@/lib/auth/authorization";
 import { getCurrentUser } from "@/lib/auth/session";
 
 export async function Header() {
@@ -30,6 +31,14 @@ export async function Header() {
               >
                 Dashboard
               </Link>
+              {canContribute(user) ? (
+                <Link
+                  href="/tags"
+                  className="rounded-md px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-950"
+                >
+                  Tags
+                </Link>
+              ) : null}
               <span className="rounded-md px-3 py-2 text-sm font-semibold text-zinc-950">
                 {user.name || user.email}
               </span>

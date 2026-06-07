@@ -139,6 +139,15 @@ export function PhotoForm({
           />
         </Field>
 
+        <Field label="Tags">
+          <input
+            className={inputClass}
+            defaultValue={photo.tags.map((tag) => tag.name).join(", ")}
+            name="tags"
+            placeholder="Lappi, Hyundai, Service park"
+          />
+        </Field>
+
         <div className="flex flex-col gap-3 sm:flex-row">
           <button
             type="submit"

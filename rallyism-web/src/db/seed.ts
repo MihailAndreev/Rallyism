@@ -353,6 +353,9 @@ async function main() {
     { name: "Cars", slug: "cars" },
     { name: "WRC", slug: "wrc" },
     { name: "Road trip", slug: "road-trip" },
+    { name: "Lappi", slug: "lappi" },
+    { name: "Toyota", slug: "toyota" },
+    { name: "Hyundai", slug: "hyundai" },
   ];
 
   const createdTags = await Promise.all(tagInputs.map(getOrCreateTag));
@@ -361,8 +364,11 @@ async function main() {
   await assignTag(jumpPhoto.id, tagBySlug.get("stage")!.id);
   await assignTag(jumpPhoto.id, tagBySlug.get("cars")!.id);
   await assignTag(jumpPhoto.id, tagBySlug.get("wrc")!.id);
+  await assignTag(jumpPhoto.id, tagBySlug.get("lappi")!.id);
+  await assignTag(jumpPhoto.id, tagBySlug.get("toyota")!.id);
   await assignTag(servicePhoto.id, tagBySlug.get("service-park")!.id);
   await assignTag(servicePhoto.id, tagBySlug.get("cars")!.id);
+  await assignTag(servicePhoto.id, tagBySlug.get("hyundai")!.id);
   await assignTag(onboardVideo.id, tagBySlug.get("road-trip")!.id);
   await assignTag(onboardVideo.id, tagBySlug.get("wrc")!.id);
 

@@ -13,6 +13,7 @@ type AlbumPhotoViewerPhoto = Pick<
   | "thumbnailImageUrl"
   | "displayImageUrl"
   | "originalImageUrl"
+  | "tags"
 >;
 
 function getViewerImageUrl(photo: AlbumPhotoViewerPhoto) {
@@ -202,6 +203,19 @@ export function AlbumPhotoViewer({
               <p className="mx-auto max-w-4xl break-words text-sm leading-6 text-zinc-200">
                 {selectedPhoto.caption}
               </p>
+            ) : null}
+            {selectedPhoto.tags.length > 0 ? (
+              <div className="mx-auto mt-3 flex max-w-4xl flex-wrap gap-2">
+                {selectedPhoto.tags.map((tag) => (
+                  <a
+                    key={tag.id}
+                    href={`/tags/${tag.slug}`}
+                    className="rounded-md border border-white/15 bg-white/10 px-2 py-1 text-xs font-semibold text-zinc-100 transition hover:bg-white/20"
+                  >
+                    {tag.name}
+                  </a>
+                ))}
+              </div>
             ) : null}
             <div className="mt-3 grid grid-cols-2 gap-3 sm:hidden">
               <button
