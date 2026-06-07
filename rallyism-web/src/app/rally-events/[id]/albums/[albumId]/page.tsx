@@ -461,7 +461,7 @@ export default async function AlbumPage({
                   albumId: parsedAlbumId,
                   filter: option.value,
                 })}
-                className={`flex-1 rounded px-3 py-1.5 text-center text-sm font-semibold transition sm:flex-none ${
+                className={`flex-1 cursor-pointer rounded px-3 py-1.5 text-center text-sm font-semibold transition sm:flex-none ${
                   mediaPage.filter === option.value
                     ? "bg-rally-blue text-white"
                     : "text-zinc-600 hover:bg-zinc-100"

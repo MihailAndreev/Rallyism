@@ -76,7 +76,7 @@ function ModeButton({
   return (
     <button
       type="button"
-      className={`inline-flex h-9 items-center justify-center rounded-md px-3 text-sm font-semibold transition ${
+      className={`inline-flex h-9 cursor-pointer items-center justify-center rounded-md px-3 text-sm font-semibold transition ${
         active
           ? "bg-rally-blue text-white hover:bg-rally-blue-hover"
           : "border border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-100"
