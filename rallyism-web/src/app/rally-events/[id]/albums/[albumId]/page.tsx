@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { bulkDeletePhotosAction } from "@/app/rally-events/[id]/albums/[albumId]/bulk-photo-actions";
+import { bulkDeleteVideosAction } from "@/app/rally-events/[id]/albums/[albumId]/bulk-video-actions";
 import {
   AlbumMediaGrid,
   type AlbumMediaGridItem,
@@ -370,8 +371,9 @@ export default async function AlbumPage({
           </div>
         ) : mediaPage.items.length > 0 ? (
           <AlbumMediaGrid
-            action={bulkDeletePhotosAction}
             albumId={parsedAlbumId}
+            bulkDeletePhotosAction={bulkDeletePhotosAction}
+            bulkDeleteVideosAction={bulkDeleteVideosAction}
             items={galleryItems}
             rallyEventId={rallyEventId}
           />

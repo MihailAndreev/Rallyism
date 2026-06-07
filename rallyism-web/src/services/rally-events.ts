@@ -1833,6 +1833,77 @@ export async function deleteVideo(input: {
   return { status: "allowed" as const };
 }
 
+export async function bulkDeleteVideos(input: {
+  rallyEventId: number;
+  albumId: number;
+  mediaIds: number[];
+  currentUser: AuthUser;
+}) {
+  if (!canContribute(input.currentUser)) {
+    throw new VideoValidationError("Your account is not approved to delete videos.");
+  }
+
+  const uniqueMediaIds = [...new Set(input.mediaIds)];
+
+  if (uniqueMediaIds.length === 0) {
+    throw new VideoValidationError("Select at least one video to delete.");
+  }
+
+  const albumAccess = await getAlbumMediaGalleryDetails({
+    rallyEventId: input.rallyEventId,
+    albumId: input.albumId,
+    currentUser: input.currentUser,
+    pageSize: 1,
+  });
+
+  if (albumAccess.status !== "allowed") {
+    return albumAccess;
+  }
+
+  const videoRows = await db
+    .select({
+      id: mediaItems.id,
+      createdById: mediaItems.createdById,
+    })
+    .from(mediaItems)
+    .where(
+      and(
+        eq(mediaItems.albumId, input.albumId),
+        eq(mediaItems.rallyEventId, input.rallyEventId),
+        eq(mediaItems.type, "video"),
+        inArray(mediaItems.id, uniqueMediaIds),
+      ),
+    );
+
+  if (videoRows.length !== uniqueMediaIds.length) {
+    throw new VideoValidationError("One or more selected items are not valid videos.");
+  }
+
+  const unauthorizedVideo = videoRows.find(
+    (video) => !userCanManageVideo(albumAccess.event, video, input.currentUser),
+  );
+
+  if (unauthorizedVideo) {
+    return { status: "access-denied" as const };
+  }
+
+  await db
+    .delete(mediaItems)
+    .where(
+      and(
+        eq(mediaItems.albumId, input.albumId),
+        eq(mediaItems.rallyEventId, input.rallyEventId),
+        eq(mediaItems.type, "video"),
+        inArray(mediaItems.id, uniqueMediaIds),
+      ),
+    );
+
+  return {
+    status: "allowed" as const,
+    deletedCount: uniqueMediaIds.length,
+  };
+}
+
 export function userCanManagePhoto(
   event: { createdById: number | null },
   photo: { createdById: number | null },

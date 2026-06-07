@@ -35,6 +35,22 @@ function getToast(input: { code: string | null; count: string | null }): Toast |
     };
   }
 
+  if (input.code === "videos-deleted") {
+    return {
+      id: `${input.code}-${input.count ?? ""}`,
+      message: `${photoCount} video${photoCount === 1 ? "" : "s"} deleted.`,
+      tone: "success",
+    };
+  }
+
+  if (input.code === "videos-delete-failed") {
+    return {
+      id: input.code,
+      message: "Selected videos could not be deleted.",
+      tone: "error",
+    };
+  }
+
   if (input.code === "photo-deleted") {
     return {
       id: input.code,

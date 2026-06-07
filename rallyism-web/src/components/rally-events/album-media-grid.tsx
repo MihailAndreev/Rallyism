@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
@@ -21,11 +21,19 @@ export type AlbumMediaGridItem = {
 };
 
 type AlbumMediaGridProps = {
-  action: (formData: FormData) => void | Promise<void>;
   albumId: number;
+  bulkDeletePhotosAction: (formData: FormData) => void | Promise<void>;
+  bulkDeleteVideosAction: (formData: FormData) => void | Promise<void>;
   items: AlbumMediaGridItem[];
   rallyEventId: number;
 };
+
+type ManagementMode =
+  | "none"
+  | "selectPhotos"
+  | "editPhotos"
+  | "selectVideos"
+  | "editVideos";
 
 function getPhotoImageUrl(item: AlbumMediaGridItem) {
   return item.thumbnailImageUrl ?? item.displayImageUrl ?? item.originalImageUrl;
@@ -56,17 +64,44 @@ function DeleteButton({
   );
 }
 
+function ModeButton({
+  active,
+  children,
+  onClick,
+}: {
+  active: boolean;
+  children: ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className={`inline-flex h-9 items-center justify-center rounded-md px-3 text-sm font-semibold transition ${
+        active
+          ? "bg-zinc-950 text-white hover:bg-zinc-800"
+          : "border border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-100"
+      }`}
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  );
+}
+
 export function AlbumMediaGrid({
-  action,
   albumId,
+  bulkDeletePhotosAction,
+  bulkDeleteVideosAction,
   items,
   rallyEventId,
 }: AlbumMediaGridProps) {
-  const formRef = useRef<HTMLFormElement>(null);
-  const [manageMode, setManageMode] = useState(false);
+  const photoFormRef = useRef<HTMLFormElement>(null);
+  const videoFormRef = useRef<HTMLFormElement>(null);
+  const [mode, setMode] = useState<ManagementMode>("none");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [selectedPhotoIds, setSelectedPhotoIds] = useState<number[]>([]);
+  const [selectedVideoIds, setSelectedVideoIds] = useState<number[]>([]);
   const manageablePhotoIds = useMemo(
     () =>
       items
@@ -74,7 +109,20 @@ export function AlbumMediaGrid({
         .map((item) => item.id),
     [items],
   );
+  const manageableVideoIds = useMemo(
+    () =>
+      items
+        .filter((item) => item.type === "video" && item.canManage)
+        .map((item) => item.id),
+    [items],
+  );
   const selectedCount = selectedPhotoIds.length;
+  const selectedVideoCount = selectedVideoIds.length;
+  const activeSelectedCount =
+    mode === "selectVideos" ? selectedVideoCount : selectedCount;
+  const deletingVideos = mode === "selectVideos";
+  const hasManagementControls =
+    manageablePhotoIds.length > 0 || manageableVideoIds.length > 0;
 
   function togglePhoto(photoId: number) {
     setSelectedPhotoIds((current) =>
@@ -84,28 +132,96 @@ export function AlbumMediaGrid({
     );
   }
 
-  function toggleManageMode() {
-    setManageMode((current) => !current);
+  function toggleVideo(videoId: number) {
+    setSelectedVideoIds((current) =>
+      current.includes(videoId)
+        ? current.filter((id) => id !== videoId)
+        : [...current, videoId],
+    );
+  }
+
+  function setManagementMode(nextMode: ManagementMode) {
+    setMode((current) => (current === nextMode ? "none" : nextMode));
     setSelectedPhotoIds([]);
+    setSelectedVideoIds([]);
     setShowDeleteDialog(false);
   }
 
   function submitBulkDelete() {
-    if (selectedCount === 0 || submitting) {
+    if (activeSelectedCount === 0 || submitting) {
       return;
     }
 
     setSubmitting(true);
-    formRef.current?.requestSubmit();
+    if (deletingVideos) {
+      videoFormRef.current?.requestSubmit();
+      return;
+    }
+
+    photoFormRef.current?.requestSubmit();
   }
 
   return (
     <div className="space-y-4">
+      {hasManagementControls ? (
+        <div className="space-y-3 rounded-lg border border-zinc-200 bg-white px-3 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              {manageablePhotoIds.length > 0 ? (
+                <>
+                  <ModeButton
+                    active={mode === "selectPhotos"}
+                    onClick={() => setManagementMode("selectPhotos")}
+                  >
+                    Select photos
+                  </ModeButton>
+                  <ModeButton
+                    active={mode === "editPhotos"}
+                    onClick={() => setManagementMode("editPhotos")}
+                  >
+                    Edit photos
+                  </ModeButton>
+                </>
+              ) : null}
+              {manageableVideoIds.length > 0 ? (
+                <>
+                  <ModeButton
+                    active={mode === "selectVideos"}
+                    onClick={() => setManagementMode("selectVideos")}
+                  >
+                    Select videos
+                  </ModeButton>
+                  <ModeButton
+                    active={mode === "editVideos"}
+                    onClick={() => setManagementMode("editVideos")}
+                  >
+                    Edit videos
+                  </ModeButton>
+                </>
+              ) : null}
+            </div>
+
+            {mode === "selectPhotos" || mode === "selectVideos" ? (
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-sm font-medium text-zinc-600">
+                  {activeSelectedCount} selected
+                </span>
+                <DeleteButton
+                  selectedCount={activeSelectedCount}
+                  submitting={submitting}
+                  onClick={() => setShowDeleteDialog(true)}
+                />
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
       {manageablePhotoIds.length > 0 ? (
         <form
-          ref={formRef}
-          action={action}
-          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-zinc-200 bg-white px-3 py-3"
+          ref={photoFormRef}
+          action={bulkDeletePhotosAction}
+          className="hidden"
           onSubmit={(event) => {
             if (selectedCount === 0) {
               event.preventDefault();
@@ -120,43 +236,40 @@ export function AlbumMediaGrid({
           {selectedPhotoIds.map((photoId) => (
             <input key={photoId} type="hidden" name="photoIds" value={photoId} />
           ))}
+        </form>
+      ) : null}
 
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              className={`inline-flex h-9 items-center justify-center rounded-md px-3 text-sm font-semibold transition ${
-                manageMode
-                  ? "bg-zinc-950 text-white hover:bg-zinc-800"
-                  : "border border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-100"
-              }`}
-              onClick={toggleManageMode}
-            >
-              {manageMode ? "Done" : "Manage photos"}
-            </button>
-            {manageMode ? (
-              <span className="text-sm font-medium text-zinc-600">
-                {selectedCount} selected
-              </span>
-            ) : null}
-          </div>
+      {manageableVideoIds.length > 0 ? (
+        <form
+          ref={videoFormRef}
+          action={bulkDeleteVideosAction}
+          className="hidden"
+          onSubmit={(event) => {
+            if (selectedVideoCount === 0) {
+              event.preventDefault();
+              return;
+            }
 
-          {manageMode ? (
-            <DeleteButton
-              selectedCount={selectedCount}
-              submitting={submitting}
-              onClick={() => setShowDeleteDialog(true)}
-            />
-          ) : null}
+            setSubmitting(true);
+          }}
+        >
+          <input type="hidden" name="rallyEventId" value={rallyEventId} />
+          <input type="hidden" name="albumId" value={albumId} />
+          {selectedVideoIds.map((videoId) => (
+            <input key={videoId} type="hidden" name="videoIds" value={videoId} />
+          ))}
         </form>
       ) : null}
 
       <ConfirmDialog
         open={showDeleteDialog}
-        title="Delete selected photos?"
-        description={`Delete ${selectedCount} selected photo${
-          selectedCount === 1 ? "" : "s"
+        title={`Delete selected ${deletingVideos ? "videos" : "photos"}?`}
+        description={`Delete ${activeSelectedCount} selected ${
+          deletingVideos ? "video" : "photo"
+        }${
+          activeSelectedCount === 1 ? "" : "s"
         } from this album. This cannot be undone.`}
-        confirmLabel="Delete photos"
+        confirmLabel={deletingVideos ? "Delete videos" : "Delete photos"}
         pendingLabel="Deleting..."
         destructive
         pending={submitting}
@@ -174,12 +287,18 @@ export function AlbumMediaGrid({
             <PhotoTile
               key={item.id}
               item={item}
-              manageMode={manageMode}
+              mode={mode}
               selected={selectedPhotoIds.includes(item.id)}
               onToggle={() => togglePhoto(item.id)}
             />
           ) : (
-            <VideoTile key={item.id} item={item} />
+            <VideoTile
+              key={item.id}
+              item={item}
+              mode={mode}
+              selected={selectedVideoIds.includes(item.id)}
+              onToggle={() => toggleVideo(item.id)}
+            />
           ),
         )}
       </div>
@@ -189,12 +308,12 @@ export function AlbumMediaGrid({
 
 function PhotoTile({
   item,
-  manageMode,
+  mode,
   selected,
   onToggle,
 }: {
   item: AlbumMediaGridItem;
-  manageMode: boolean;
+  mode: ManagementMode;
   selected: boolean;
   onToggle: () => void;
 }) {
@@ -216,7 +335,7 @@ function PhotoTile({
     </div>
   );
 
-  if (manageMode && item.canManage) {
+  if (mode === "selectPhotos" && item.canManage) {
     return (
       <article className={`${interactiveClass} ${borderClass}`}>
         <button
@@ -254,12 +373,24 @@ function PhotoTile({
         {image}
         <span className="sr-only">Open photo viewer</span>
       </Link>
-      {item.canManage ? <EditLink href={item.editHref} /> : null}
+      {mode === "editPhotos" && item.canManage ? (
+        <EditLink href={item.editHref} />
+      ) : null}
     </article>
   );
 }
 
-function VideoTile({ item }: { item: AlbumMediaGridItem }) {
+function VideoTile({
+  item,
+  mode,
+  selected,
+  onToggle,
+}: {
+  item: AlbumMediaGridItem;
+  mode: ManagementMode;
+  selected: boolean;
+  onToggle: () => void;
+}) {
   const thumbnailUrl = item.youtubeThumbnailUrl;
   const content = (
     <>
@@ -287,6 +418,41 @@ function VideoTile({ item }: { item: AlbumMediaGridItem }) {
       </span>
     </>
   );
+  const borderClass = selected ? "border-red-500 ring-2 ring-red-500" : "border-zinc-200";
+
+  if (mode === "selectVideos" && item.canManage) {
+    return (
+      <article
+        className={`group relative aspect-square overflow-hidden rounded-md border bg-white shadow-sm transition hover:border-red-200 hover:shadow-md ${borderClass}`}
+      >
+        <button
+          type="button"
+          aria-pressed={selected}
+          className="block h-full w-full cursor-pointer text-left"
+          onClick={onToggle}
+        >
+          <span className="sr-only">
+            {selected ? "Unselect video" : "Select video"}
+          </span>
+          {content}
+          <span
+            className={`pointer-events-none absolute inset-0 transition ${
+              selected ? "bg-red-600/20" : "bg-black/0 group-hover:bg-black/10"
+            }`}
+          />
+          <span
+            className={`pointer-events-none absolute right-2 top-2 z-20 inline-flex h-7 min-w-7 items-center justify-center rounded-full border px-2 text-[10px] font-bold uppercase shadow-sm ${
+              selected
+                ? "border-red-600 bg-red-600 text-white"
+                : "border-white/80 bg-black/55 text-white"
+            }`}
+          >
+            {selected ? "Selected" : "Select"}
+          </span>
+        </button>
+      </article>
+    );
+  }
 
   return (
     <article className="group relative aspect-square overflow-hidden rounded-md border border-zinc-200 bg-white shadow-sm transition hover:border-red-200 hover:shadow-md">
@@ -303,7 +469,9 @@ function VideoTile({ item }: { item: AlbumMediaGridItem }) {
       ) : (
         content
       )}
-      {item.canManage ? <EditLink href={item.editHref} /> : null}
+      {mode === "editVideos" && item.canManage ? (
+        <EditLink href={item.editHref} />
+      ) : null}
     </article>
   );
 }
