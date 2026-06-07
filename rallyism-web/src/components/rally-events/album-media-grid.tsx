@@ -180,29 +180,33 @@ function PhotoTile({
 
   if (manageMode && item.canManage) {
     return (
-      <div className={`${interactiveClass} ${borderClass}`}>
+      <article className={`${interactiveClass} ${borderClass}`}>
         <button
           type="button"
           aria-pressed={selected}
-          className="absolute inset-0 z-10"
+          className="block h-full w-full cursor-pointer text-left"
           onClick={onToggle}
         >
           <span className="sr-only">
             {selected ? "Unselect photo" : "Select photo"}
           </span>
+          {image}
+          <span
+            className={`pointer-events-none absolute inset-0 transition ${
+              selected ? "bg-red-600/20" : "bg-black/0 group-hover:bg-black/10"
+            }`}
+          />
+          <span
+            className={`pointer-events-none absolute left-2 top-2 z-20 inline-flex h-7 min-w-7 items-center justify-center rounded-full border px-2 text-[10px] font-bold uppercase shadow-sm ${
+              selected
+                ? "border-red-600 bg-red-600 text-white"
+                : "border-white/80 bg-black/55 text-white"
+            }`}
+          >
+            {selected ? "Selected" : "Select"}
+          </span>
         </button>
-        {image}
-        <span
-          className={`absolute left-2 top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full border text-xs font-bold ${
-            selected
-              ? "border-red-600 bg-red-600 text-white"
-              : "border-white/80 bg-black/45 text-white"
-          }`}
-        >
-          {selected ? "x" : ""}
-        </span>
-        <EditLink href={item.editHref} />
-      </div>
+      </article>
     );
   }
 
