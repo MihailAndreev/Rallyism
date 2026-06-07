@@ -1759,6 +1759,82 @@ export async function deletePhoto(input: {
   return { status: "allowed" as const };
 }
 
+export async function bulkDeletePhotos(input: {
+  rallyEventId: number;
+  albumId: number;
+  mediaIds: number[];
+  currentUser: AuthUser;
+}) {
+  if (!canContribute(input.currentUser)) {
+    throw new PhotoValidationError("Your account is not approved to delete photos.");
+  }
+
+  const uniqueMediaIds = [...new Set(input.mediaIds)];
+
+  if (uniqueMediaIds.length === 0) {
+    throw new PhotoValidationError("Select at least one photo to delete.");
+  }
+
+  const albumAccess = await getAlbumMediaGalleryDetails({
+    rallyEventId: input.rallyEventId,
+    albumId: input.albumId,
+    currentUser: input.currentUser,
+    pageSize: 1,
+  });
+
+  if (albumAccess.status !== "allowed") {
+    return albumAccess;
+  }
+
+  const photoRows = await db
+    .select({
+      id: mediaItems.id,
+      createdById: mediaItems.createdById,
+      thumbnailImageR2Key: mediaItems.thumbnailImageR2Key,
+      displayImageR2Key: mediaItems.displayImageR2Key,
+      originalImageR2Key: mediaItems.originalImageR2Key,
+    })
+    .from(mediaItems)
+    .where(
+      and(
+        eq(mediaItems.albumId, input.albumId),
+        eq(mediaItems.rallyEventId, input.rallyEventId),
+        eq(mediaItems.type, "photo"),
+        inArray(mediaItems.id, uniqueMediaIds),
+      ),
+    );
+
+  if (photoRows.length !== uniqueMediaIds.length) {
+    throw new PhotoValidationError("One or more selected items are not valid photos.");
+  }
+
+  const unauthorizedPhoto = photoRows.find(
+    (photo) => !userCanManagePhoto(albumAccess.event, photo, input.currentUser),
+  );
+
+  if (unauthorizedPhoto) {
+    return { status: "access-denied" as const };
+  }
+
+  await deleteR2KeysOrThrow(collectR2Keys(photoRows));
+
+  await db
+    .delete(mediaItems)
+    .where(
+      and(
+        eq(mediaItems.albumId, input.albumId),
+        eq(mediaItems.rallyEventId, input.rallyEventId),
+        eq(mediaItems.type, "photo"),
+        inArray(mediaItems.id, uniqueMediaIds),
+      ),
+    );
+
+  return {
+    status: "allowed" as const,
+    deletedCount: uniqueMediaIds.length,
+  };
+}
+
 export async function getRallyEventById(id: number) {
   const [event] = await db
     .select()

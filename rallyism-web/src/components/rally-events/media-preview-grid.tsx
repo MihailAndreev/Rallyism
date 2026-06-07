@@ -77,29 +77,23 @@ export function MediaPreviewGrid({
             return (
               <article
                 key={item.id}
-                className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm"
+                className="relative aspect-[4/3] overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100 shadow-sm"
               >
                 {imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={imageUrl}
                     alt={item.title ?? `${item.type} preview`}
-                    className="h-40 w-full object-cover"
+                    className="h-full w-full object-cover"
                   />
-                ) : null}
-                <div className="space-y-2 p-4">
-                  <span className="inline-flex rounded-md border border-zinc-200 bg-zinc-50 px-2 py-1 text-xs font-semibold capitalize text-zinc-600">
+                ) : (
+                  <div className="flex h-full items-center justify-center px-4 text-center text-sm font-semibold text-zinc-500">
                     {item.type === "video" ? "Video" : "Photo"}
-                  </span>
-                  <h3 className="text-base font-semibold text-zinc-950">
-                    {item.title ?? "Untitled memory"}
-                  </h3>
-                  {item.caption ? (
-                    <p className="text-sm leading-6 text-zinc-600">
-                      {item.caption}
-                    </p>
-                  ) : null}
-                </div>
+                  </div>
+                )}
+                <span className="absolute left-3 top-3 inline-flex rounded-md border border-white/70 bg-white/90 px-2 py-1 text-xs font-semibold text-zinc-700 shadow-sm">
+                  {item.type === "video" ? "Video" : "Photo"}
+                </span>
               </article>
             );
           })}

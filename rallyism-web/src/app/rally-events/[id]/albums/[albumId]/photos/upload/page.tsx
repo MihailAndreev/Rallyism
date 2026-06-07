@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { uploadPhotosAction } from "@/app/rally-events/[id]/albums/[albumId]/photos/upload/actions";
+import { PhotoUploadForm } from "@/components/rally-events/photo-upload-form";
 import { RallyAccessDenied } from "@/components/rally-events/rally-access-denied";
 import { requireContributor } from "@/lib/auth/authorization";
 import {
@@ -94,46 +95,12 @@ export default async function UploadPhotosPage({
           </div>
         ) : null}
 
-        <form action={uploadPhotosAction} className="space-y-6">
-          <input type="hidden" name="rallyEventId" value={rallyEventId} />
-          <input type="hidden" name="albumId" value={parsedAlbumId} />
-
-          <div className="space-y-2">
-            <label
-              htmlFor="photos"
-              className="block text-sm font-semibold text-zinc-950"
-            >
-              Photo files
-            </label>
-            <input
-              id="photos"
-              name="photos"
-              type="file"
-              multiple
-              accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
-              className="block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm file:mr-4 file:rounded-md file:border-0 file:bg-zinc-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-zinc-900 hover:file:bg-zinc-200 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100"
-            />
-            <p className="text-sm leading-6 text-zinc-500">
-              HEIC photos are rejected for now. Uploaded images are converted to
-              WebP display and thumbnail files.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            <button
-              type="submit"
-              className="inline-flex h-10 items-center justify-center rounded-md bg-red-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700"
-            >
-              Upload photos
-            </button>
-            <Link
-              href={`/rally-events/${rallyEventId}/albums/${parsedAlbumId}`}
-              className="inline-flex h-10 items-center justify-center rounded-md border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-900 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-100"
-            >
-              Cancel
-            </Link>
-          </div>
-        </form>
+        <PhotoUploadForm
+          action={uploadPhotosAction}
+          albumId={parsedAlbumId}
+          cancelHref={`/rally-events/${rallyEventId}/albums/${parsedAlbumId}`}
+          rallyEventId={rallyEventId}
+        />
       </section>
     </div>
   );

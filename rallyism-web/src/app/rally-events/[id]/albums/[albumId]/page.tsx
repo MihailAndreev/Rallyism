@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { bulkDeletePhotosAction } from "@/app/rally-events/[id]/albums/[albumId]/bulk-photo-actions";
+import {
+  AlbumMediaGrid,
+  type AlbumMediaGridItem,
+} from "@/components/rally-events/album-media-grid";
 import { AlbumPhotoViewer } from "@/components/rally-events/album-photo-viewer";
 import { RallyAccessDenied } from "@/components/rally-events/rally-access-denied";
 import { formatDate } from "@/components/rally-events/rally-event-format";
@@ -12,7 +17,6 @@ import {
   userCanManagePhoto,
   userCanManageVideo,
   type AlbumMediaFilter,
-  type AlbumMediaItem,
 } from "@/services/rally-events";
 
 type AlbumPageProps = {
@@ -26,6 +30,8 @@ type AlbumPageProps = {
     uploadStatus?: string;
     uploaded?: string;
     failed?: string;
+    bulkDeleted?: string;
+    bulkError?: string;
   }>;
 };
 
@@ -77,14 +83,6 @@ function getAlbumPageHref(input: {
   }`;
 }
 
-function getPhotoImageUrl(item: AlbumMediaItem) {
-  return item.thumbnailImageUrl ?? item.displayImageUrl ?? item.originalImageUrl;
-}
-
-function getMediaTitle(item: AlbumMediaItem) {
-  return item.title ?? (item.type === "video" ? "Untitled video" : "Untitled photo");
-}
-
 function getUploadResultMessage(searchParams: Awaited<AlbumPageProps["searchParams"]>) {
   const status = searchParams?.uploadStatus;
 
@@ -122,155 +120,38 @@ function getUploadResultMessage(searchParams: Awaited<AlbumPageProps["searchPara
   return null;
 }
 
-function PhotoCard({
-  canManage,
-  item,
-  href,
-  rallyEventId,
-}: {
-  canManage: boolean;
-  item: AlbumMediaItem;
-  href: string;
-  rallyEventId: number;
-}) {
-  const imageUrl = getPhotoImageUrl(item);
+function getBulkDeleteResultMessage(
+  searchParams: Awaited<AlbumPageProps["searchParams"]>,
+) {
+  if (searchParams?.bulkError) {
+    return {
+      tone: "error" as const,
+      text: searchParams.bulkError,
+    };
+  }
 
-  return (
-    <article className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-red-200 hover:shadow-md">
-      <Link href={href} scroll={false} className="group block">
-        <div className="aspect-[4/3] w-full bg-zinc-100">
-          {imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={imageUrl}
-              alt={getMediaTitle(item)}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center px-4 text-center text-sm font-semibold text-zinc-500">
-              Photo
-            </div>
-          )}
-        </div>
-        <div className="min-w-0 space-y-2 p-4">
-          <span className="inline-flex rounded-md border border-zinc-200 bg-zinc-50 px-2 py-1 text-xs font-semibold text-zinc-600">
-            Photo
-          </span>
-          <h2 className="line-clamp-2 break-words text-base font-semibold text-zinc-950">
-            {getMediaTitle(item)}
-          </h2>
-          {item.caption ? (
-            <p className="line-clamp-3 break-words text-sm leading-6 text-zinc-600">
-              {item.caption}
-            </p>
-          ) : null}
-        </div>
-      </Link>
-      {canManage ? (
-        <div className="border-t border-zinc-200 px-4 py-3">
-          <Link
-            href={`/rally-events/${rallyEventId}/albums/${item.albumId}/photos/${item.id}/edit`}
-            className="inline-flex text-sm font-semibold text-red-700 hover:text-red-800"
-          >
-            Edit
-          </Link>
-        </div>
-      ) : null}
-    </article>
-  );
+  const deleted = Number(searchParams?.bulkDeleted ?? 0);
+
+  if (deleted > 0) {
+    return {
+      tone: "success" as const,
+      text: `${deleted} photo${deleted === 1 ? "" : "s"} deleted.`,
+    };
+  }
+
+  return null;
 }
 
-function VideoCard({
-  canManage,
-  item,
-  rallyEventId,
-}: {
-  canManage: boolean;
-  item: AlbumMediaItem;
-  rallyEventId: number;
-}) {
-  const content = (
-    <>
-      <div className="aspect-[4/3] w-full bg-zinc-100">
-        {item.youtubeThumbnailUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={item.youtubeThumbnailUrl}
-            alt={getMediaTitle(item)}
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center px-4 text-center text-sm font-semibold text-zinc-500">
-            YouTube video
-          </div>
-        )}
-      </div>
-      <div className="min-w-0 space-y-2 p-4">
-        <span className="inline-flex rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-700">
-          Video
-        </span>
-        <h2 className="line-clamp-2 break-words text-base font-semibold text-zinc-950">
-          {getMediaTitle(item)}
-        </h2>
-        {item.caption ? (
-          <p className="line-clamp-3 break-words text-sm leading-6 text-zinc-600">
-            {item.caption}
-          </p>
-        ) : null}
-      </div>
-    </>
-  );
+function getResultClass(tone: "success" | "warning" | "error") {
+  if (tone === "success") {
+    return "border-emerald-200 bg-emerald-50 text-emerald-800";
+  }
 
-  return (
-    <article className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-red-200 hover:shadow-md">
-      {item.youtubeUrl ? (
-        <a
-          href={item.youtubeUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="group block"
-        >
-          {content}
-          <span className="sr-only">Open video on YouTube</span>
-        </a>
-      ) : (
-        content
-      )}
-      {canManage ? (
-        <div className="border-t border-zinc-200 px-4 py-3">
-          <Link
-            href={`/rally-events/${rallyEventId}/albums/${item.albumId}/videos/${item.id}/edit`}
-            className="inline-flex text-sm font-semibold text-red-700 hover:text-red-800"
-          >
-            Edit
-          </Link>
-        </div>
-      ) : null}
-    </article>
-  );
-}
+  if (tone === "warning") {
+    return "border-amber-200 bg-amber-50 text-amber-800";
+  }
 
-function MediaCard({
-  canManage,
-  item,
-  href,
-  rallyEventId,
-}: {
-  canManage: boolean;
-  item: AlbumMediaItem;
-  href: string;
-  rallyEventId: number;
-}) {
-  return item.type === "video" ? (
-    <VideoCard canManage={canManage} item={item} rallyEventId={rallyEventId} />
-  ) : (
-    <PhotoCard
-      canManage={canManage}
-      item={item}
-      href={href}
-      rallyEventId={rallyEventId}
-    />
-  );
+  return "border-red-200 bg-red-50 text-red-800";
 }
 
 export default async function AlbumPage({
@@ -317,6 +198,38 @@ export default async function AlbumPage({
   const { album, event, mediaPage } = result;
   const canManageEvent = userCanManageEvent(event, user);
   const uploadResultMessage = getUploadResultMessage(resolvedSearchParams);
+  const bulkDeleteResultMessage = getBulkDeleteResultMessage(resolvedSearchParams);
+  const galleryItems: AlbumMediaGridItem[] = mediaPage.items.map((item) => {
+    const canManage =
+      item.type === "video"
+        ? userCanManageVideo(event, item, user)
+        : userCanManagePhoto(event, item, user);
+    const viewerHref = getAlbumPageHref({
+      rallyEventId,
+      albumId: parsedAlbumId,
+      filter: mediaPage.filter,
+      page: mediaPage.currentPage,
+      photoId: item.id,
+    });
+
+    return {
+      id: item.id,
+      albumId: item.albumId,
+      type: item.type,
+      title: item.title,
+      thumbnailImageUrl: item.thumbnailImageUrl,
+      displayImageUrl: item.displayImageUrl,
+      originalImageUrl: item.originalImageUrl,
+      youtubeThumbnailUrl: item.youtubeThumbnailUrl,
+      youtubeUrl: item.youtubeUrl,
+      canManage,
+      viewerHref,
+      editHref:
+        item.type === "video"
+          ? `/rally-events/${rallyEventId}/albums/${item.albumId}/videos/${item.id}/edit`
+          : `/rally-events/${rallyEventId}/albums/${item.albumId}/photos/${item.id}/edit`,
+    };
+  });
   const viewerPhotos = mediaPage.items
     .filter((item) => item.type === "photo")
     .map((item) => ({
@@ -395,15 +308,17 @@ export default async function AlbumPage({
 
       {uploadResultMessage ? (
         <div
-          className={`rounded-md border px-4 py-3 text-sm font-medium ${
-            uploadResultMessage.tone === "success"
-              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-              : uploadResultMessage.tone === "warning"
-                ? "border-amber-200 bg-amber-50 text-amber-800"
-                : "border-red-200 bg-red-50 text-red-800"
-          }`}
+          className={`rounded-md border px-4 py-3 text-sm font-medium ${getResultClass(uploadResultMessage.tone)}`}
         >
           {uploadResultMessage.text}
+        </div>
+      ) : null}
+
+      {bulkDeleteResultMessage ? (
+        <div
+          className={`rounded-md border px-4 py-3 text-sm font-medium ${getResultClass(bulkDeleteResultMessage.tone)}`}
+        >
+          {bulkDeleteResultMessage.text}
         </div>
       ) : null}
 
@@ -451,27 +366,12 @@ export default async function AlbumPage({
             </p>
           </div>
         ) : mediaPage.items.length > 0 ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {mediaPage.items.map((item) => (
-              <MediaCard
-                key={item.id}
-                canManage={
-                  item.type === "video"
-                    ? userCanManageVideo(event, item, user)
-                    : userCanManagePhoto(event, item, user)
-                }
-                item={item}
-                href={getAlbumPageHref({
-                  rallyEventId,
-                  albumId: parsedAlbumId,
-                  filter: mediaPage.filter,
-                  page: mediaPage.currentPage,
-                  photoId: item.id,
-                })}
-                rallyEventId={rallyEventId}
-              />
-            ))}
-          </div>
+          <AlbumMediaGrid
+            action={bulkDeletePhotosAction}
+            albumId={parsedAlbumId}
+            items={galleryItems}
+            rallyEventId={rallyEventId}
+          />
         ) : (
           <div className="rounded-lg border border-dashed border-zinc-300 bg-white px-5 py-10 text-center">
             <h2 className="text-lg font-semibold text-zinc-950">

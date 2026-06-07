@@ -1,9 +1,5 @@
 import Link from "next/link";
 
-import {
-  formatChampionship,
-  formatDateRange,
-} from "@/components/rally-events/rally-event-format";
 import { RallyEventStateBadge } from "@/components/rally-events/rally-event-state-badge";
 import { RallyEventStats } from "@/components/rally-events/rally-event-stats";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -20,10 +16,6 @@ function parsePage(value: string | undefined) {
   const page = Number(value);
 
   return Number.isInteger(page) && page > 0 ? page : 1;
-}
-
-function getLocation(event: RallyEventSummary) {
-  return event.region ? `${event.country} / ${event.region}` : event.country;
 }
 
 function PublicRallyEventCard({ event }: { event: RallyEventSummary }) {
@@ -61,51 +53,6 @@ function PublicRallyEventCard({ event }: { event: RallyEventSummary }) {
             {event.rallyName}
           </p>
         </div>
-
-        <dl className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <dt className="text-xs font-semibold uppercase text-zinc-500">
-              Championship
-            </dt>
-            <dd className="mt-1 text-sm font-medium text-zinc-900">
-              {formatChampionship(event.championship)}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-xs font-semibold uppercase text-zinc-500">
-              Season
-            </dt>
-            <dd className="mt-1 text-sm font-medium text-zinc-900">
-              {event.seasonYear}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-xs font-semibold uppercase text-zinc-500">
-              Location
-            </dt>
-            <dd className="mt-1 text-sm font-medium text-zinc-900">
-              {getLocation(event)}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-xs font-semibold uppercase text-zinc-500">
-              Dates
-            </dt>
-            <dd className="mt-1 text-sm font-medium text-zinc-900">
-              {formatDateRange(event.startDate, event.endDate)}
-            </dd>
-          </div>
-        </dl>
-
-        {event.description ? (
-          <p className="line-clamp-3 text-sm leading-6 text-zinc-600">
-            {event.description}
-          </p>
-        ) : (
-          <p className="text-sm leading-6 text-zinc-500">
-            No description has been added yet.
-          </p>
-        )}
 
         <div className="mt-auto space-y-5">
           <RallyEventStats
