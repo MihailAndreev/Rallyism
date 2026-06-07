@@ -1,26 +1,15 @@
-import { createHash, randomBytes, timingSafeEqual } from "crypto";
 import { and, desc, eq, ne, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { hashPassword } from "@/lib/auth/password";
-
-const resetTokenExpiryMinutes = 60;
-
-function getPasswordResetTokenHash(token: string) {
-  return createHash("sha256").update(token).digest("hex");
-}
-
-function safeCompareResetTokenHash(left: string, right: string) {
-  const leftBuffer = Buffer.from(left, "hex");
-  const rightBuffer = Buffer.from(right, "hex");
-
-  if (leftBuffer.length !== rightBuffer.length) {
-    return false;
-  }
-
-  return timingSafeEqual(leftBuffer, rightBuffer);
-}
+import {
+  createPasswordResetPlainToken,
+  getPasswordResetExpiry,
+  getPasswordResetTokenHash,
+  isPasswordResetExpired,
+  safeCompareResetTokenHash,
+} from "@/lib/auth/password-reset";
 
 export type AuthUser = {
   id: number;
@@ -150,11 +139,9 @@ export async function createPasswordResetToken(email: string) {
     return null;
   }
 
-  const token = randomBytes(32).toString("base64url");
+  const token = createPasswordResetPlainToken();
   const passwordResetTokenHash = getPasswordResetTokenHash(token);
-  const passwordResetExpiresAt = new Date(
-    Date.now() + resetTokenExpiryMinutes * 60 * 1000,
-  );
+  const passwordResetExpiresAt = getPasswordResetExpiry();
 
   await db
     .update(users)
@@ -185,7 +172,7 @@ export async function getPasswordResetTokenStatus(token: string) {
     user.disabledAt ||
     !user.passwordResetTokenHash ||
     !user.passwordResetExpiresAt ||
-    user.passwordResetExpiresAt.getTime() <= Date.now() ||
+    isPasswordResetExpired(user.passwordResetExpiresAt) ||
     !safeCompareResetTokenHash(user.passwordResetTokenHash, tokenHash)
   ) {
     return "invalid" as const;
@@ -215,7 +202,7 @@ export async function resetPasswordWithToken(input: {
     user.disabledAt ||
     !user.passwordResetTokenHash ||
     !user.passwordResetExpiresAt ||
-    user.passwordResetExpiresAt.getTime() <= Date.now() ||
+    isPasswordResetExpired(user.passwordResetExpiresAt) ||
     !safeCompareResetTokenHash(user.passwordResetTokenHash, tokenHash)
   ) {
     return { status: "invalid-token" as const };

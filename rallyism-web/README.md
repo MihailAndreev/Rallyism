@@ -17,6 +17,19 @@ R2_PUBLIC_BASE_URL="https://media.example.com"
 `R2_PUBLIC_BASE_URL` must be a public bucket URL or custom domain base URL. Do
 not expose R2 access keys in client components or committed source files.
 
+## Tests
+
+Run the web unit test baseline with:
+
+```bash
+npm run test -w rallyism-web
+```
+
+The baseline uses Vitest and covers pure helper logic for YouTube URL parsing,
+tag parsing and slugging, date formatting, auth validation, authorization
+checks, photo upload validation and password reset token helpers. It does not
+hit Neon, Cloudflare R2 or other network services.
+
 ## Getting Started
 
 First, run the development server:

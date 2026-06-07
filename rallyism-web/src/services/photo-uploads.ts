@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import path from "node:path";
 
 import { and, eq, inArray } from "drizzle-orm";
 import sharp from "sharp";
@@ -12,11 +11,21 @@ import {
   getR2PublicUrl,
   uploadR2Object,
 } from "@/lib/storage/r2";
+import {
+  getOriginalFilename,
+  getPhotoDisplayName,
+  PhotoUploadValidationError,
+  validatePhotoFile,
+  validatePhotoUploadBatch,
+} from "@/lib/validation/photo-upload";
 import { getEditableAlbum } from "@/services/rally-events";
 import type { AuthUser } from "@/services/users";
 
-export const PHOTO_UPLOAD_MAX_FILES = 10;
-export const PHOTO_UPLOAD_MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+export {
+  PHOTO_UPLOAD_MAX_FILE_SIZE_BYTES,
+  PHOTO_UPLOAD_MAX_FILES,
+  PhotoUploadValidationError,
+} from "@/lib/validation/photo-upload";
 
 type UploadedPhotoResult = {
   filename: string;
@@ -41,53 +50,6 @@ export type PhotoUploadResult = {
   warnings: PhotoUploadWarning[];
 };
 
-export class PhotoUploadValidationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "PhotoUploadValidationError";
-  }
-}
-
-const acceptedMimeTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
-const rejectedExtensions = new Set([".heic", ".heif"]);
-
-function getOriginalFilename(file: File) {
-  return file.name?.trim() || "photo";
-}
-
-function getDisplayName(filename: string) {
-  const parsed = path.parse(filename);
-
-  return parsed.name || "Photo";
-}
-
-function assertPhotoFile(file: File) {
-  const filename = getOriginalFilename(file);
-  const extension = path.extname(filename).toLowerCase();
-
-  if (file.size <= 0) {
-    throw new PhotoUploadValidationError("The selected file is empty.");
-  }
-
-  if (file.size > PHOTO_UPLOAD_MAX_FILE_SIZE_BYTES) {
-    throw new PhotoUploadValidationError("Photo must be 10 MB or smaller.");
-  }
-
-  if (
-    rejectedExtensions.has(extension) ||
-    file.type === "image/heic" ||
-    file.type === "image/heif"
-  ) {
-    throw new PhotoUploadValidationError("HEIC photos are not supported yet.");
-  }
-
-  if (!acceptedMimeTypes.has(file.type)) {
-    throw new PhotoUploadValidationError(
-      "Only JPG, PNG and WebP photos are supported.",
-    );
-  }
-}
-
 async function saveProcessedPhoto(input: {
   file: File;
   rallyEventId: number;
@@ -95,7 +57,7 @@ async function saveProcessedPhoto(input: {
   uploadBatchId: number;
   createdById: number;
 }) {
-  assertPhotoFile(input.file);
+  validatePhotoFile(input.file);
 
   const originalFilename = getOriginalFilename(input.file);
   const buffer = Buffer.from(await input.file.arrayBuffer());
@@ -147,7 +109,7 @@ async function saveProcessedPhoto(input: {
         rallyEventId: input.rallyEventId,
         type: "photo",
         status: "ready",
-        title: getDisplayName(originalFilename),
+        title: getPhotoDisplayName(originalFilename),
         createdById: input.createdById,
         uploadBatchId: input.uploadBatchId,
         originalFilename,
@@ -190,15 +152,7 @@ export async function uploadAlbumPhotos(input: {
     );
   }
 
-  if (input.files.length === 0) {
-    throw new PhotoUploadValidationError("Choose at least one photo to upload.");
-  }
-
-  if (input.files.length > PHOTO_UPLOAD_MAX_FILES) {
-    throw new PhotoUploadValidationError(
-      `Upload ${PHOTO_UPLOAD_MAX_FILES} photos or fewer at a time.`,
-    );
-  }
+  validatePhotoUploadBatch(input.files);
 
   const albumAccess = await getEditableAlbum({
     rallyEventId: input.rallyEventId,

@@ -1,18 +1,23 @@
 import { redirect } from "next/navigation";
 
+import {
+  canUserContribute,
+  isAdminUser,
+  isApprovedRegularUser,
+} from "@/lib/auth/permissions";
 import { getCurrentUser } from "@/lib/auth/session";
 import type { AuthUser } from "@/services/users";
 
 export function isAdmin(user: AuthUser | null) {
-  return user?.role === "admin" && !user.disabledAt;
+  return isAdminUser(user);
 }
 
 export function isApprovedUser(user: AuthUser | null) {
-  return user?.approvalStatus === "approved" && !user.disabledAt;
+  return isApprovedRegularUser(user);
 }
 
 export function canContribute(user: AuthUser | null) {
-  return isAdmin(user) || isApprovedUser(user);
+  return canUserContribute(user);
 }
 
 export async function requireContributor(from = "/dashboard") {
