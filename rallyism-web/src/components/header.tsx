@@ -23,6 +23,12 @@ export async function Header() {
           >
             Home
           </Link>
+          <Link
+            href="/about"
+            className="rounded-md px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-950"
+          >
+            About
+          </Link>
           {user ? (
             <>
               <Link
