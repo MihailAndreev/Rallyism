@@ -66,6 +66,29 @@ export function validateRegisterInput(input: {
   return "";
 }
 
+export function validateForgotPasswordInput(input: { email: string }) {
+  return validateEmail(input.email);
+}
+
+export function validateResetPasswordInput(input: {
+  password: string;
+  confirmPassword: string;
+}) {
+  if (!input.password) {
+    return "Password is required.";
+  }
+
+  if (input.password.length < minimumPasswordLength) {
+    return `Password must be at least ${minimumPasswordLength} characters.`;
+  }
+
+  if (input.password !== input.confirmPassword) {
+    return "Passwords do not match.";
+  }
+
+  return "";
+}
+
 export function getSafeRedirectPath(value: FormDataEntryValue | string | null) {
   if (typeof value !== "string") {
     return "/dashboard";

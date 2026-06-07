@@ -8,9 +8,10 @@ import { initialAuthActionState } from "@/lib/validation/auth";
 
 type LoginFormProps = {
   from: string;
+  message?: string;
 };
 
-export function LoginForm({ from }: LoginFormProps) {
+export function LoginForm({ from, message = "" }: LoginFormProps) {
   const [state, formAction, isPending] = useActionState(
     loginAction,
     initialAuthActionState,
@@ -49,9 +50,11 @@ export function LoginForm({ from }: LoginFormProps) {
       </div>
       <div
         aria-live="polite"
-        className="min-h-6 text-sm font-medium text-red-700"
+        className={`min-h-6 text-sm font-medium ${
+          state.error ? "text-red-700" : "text-emerald-700"
+        }`}
       >
-        {state.error}
+        {state.error || message}
       </div>
       <button
         type="submit"
@@ -60,6 +63,11 @@ export function LoginForm({ from }: LoginFormProps) {
       >
         {isPending ? "Logging in..." : "Login"}
       </button>
+      <p className="text-center text-sm text-zinc-600">
+        <Link href="/forgot-password" className="font-semibold text-red-700">
+          Forgot password?
+        </Link>
+      </p>
       <p className="text-center text-sm text-zinc-600">
         New to Rallyism?{" "}
         <Link href="/register" className="font-semibold text-red-700">

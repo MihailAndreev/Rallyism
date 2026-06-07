@@ -1,8 +1,26 @@
+import { createHash, randomBytes, timingSafeEqual } from "crypto";
 import { and, desc, eq, ne, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { hashPassword } from "@/lib/auth/password";
+
+const resetTokenExpiryMinutes = 60;
+
+function getPasswordResetTokenHash(token: string) {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+function safeCompareResetTokenHash(left: string, right: string) {
+  const leftBuffer = Buffer.from(left, "hex");
+  const rightBuffer = Buffer.from(right, "hex");
+
+  if (leftBuffer.length !== rightBuffer.length) {
+    return false;
+  }
+
+  return timingSafeEqual(leftBuffer, rightBuffer);
+}
 
 export type AuthUser = {
   id: number;
@@ -123,6 +141,99 @@ export async function createUser(input: {
     });
 
   return user;
+}
+
+export async function createPasswordResetToken(email: string) {
+  const user = await findUserByEmail(email.trim().toLowerCase());
+
+  if (!user || user.disabledAt) {
+    return null;
+  }
+
+  const token = randomBytes(32).toString("base64url");
+  const passwordResetTokenHash = getPasswordResetTokenHash(token);
+  const passwordResetExpiresAt = new Date(
+    Date.now() + resetTokenExpiryMinutes * 60 * 1000,
+  );
+
+  await db
+    .update(users)
+    .set({
+      passwordResetTokenHash,
+      passwordResetExpiresAt,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, user.id));
+
+  return token;
+}
+
+export async function getPasswordResetTokenStatus(token: string) {
+  const tokenHash = getPasswordResetTokenHash(token);
+  const [user] = await db
+    .select({
+      disabledAt: users.disabledAt,
+      passwordResetTokenHash: users.passwordResetTokenHash,
+      passwordResetExpiresAt: users.passwordResetExpiresAt,
+    })
+    .from(users)
+    .where(eq(users.passwordResetTokenHash, tokenHash))
+    .limit(1);
+
+  if (
+    !user ||
+    user.disabledAt ||
+    !user.passwordResetTokenHash ||
+    !user.passwordResetExpiresAt ||
+    user.passwordResetExpiresAt.getTime() <= Date.now() ||
+    !safeCompareResetTokenHash(user.passwordResetTokenHash, tokenHash)
+  ) {
+    return "invalid" as const;
+  }
+
+  return "valid" as const;
+}
+
+export async function resetPasswordWithToken(input: {
+  token: string;
+  password: string;
+}) {
+  const tokenHash = getPasswordResetTokenHash(input.token);
+  const [user] = await db
+    .select({
+      id: users.id,
+      disabledAt: users.disabledAt,
+      passwordResetTokenHash: users.passwordResetTokenHash,
+      passwordResetExpiresAt: users.passwordResetExpiresAt,
+    })
+    .from(users)
+    .where(eq(users.passwordResetTokenHash, tokenHash))
+    .limit(1);
+
+  if (
+    !user ||
+    user.disabledAt ||
+    !user.passwordResetTokenHash ||
+    !user.passwordResetExpiresAt ||
+    user.passwordResetExpiresAt.getTime() <= Date.now() ||
+    !safeCompareResetTokenHash(user.passwordResetTokenHash, tokenHash)
+  ) {
+    return { status: "invalid-token" as const };
+  }
+
+  const passwordHash = await hashPassword(input.password);
+
+  await db
+    .update(users)
+    .set({
+      passwordHash,
+      passwordResetTokenHash: null,
+      passwordResetExpiresAt: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, user.id));
+
+  return { status: "success" as const };
 }
 
 function getAdminUsersWhereClause(status: UserApprovalStatusFilter) {
