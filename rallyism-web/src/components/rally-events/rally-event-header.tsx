@@ -27,7 +27,7 @@ export function RallyEventHeader({
             {event.visibility}
           </span>
           {event.featured ? (
-            <span className="rounded-md border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700">
+            <span className="rounded-md border border-rally-orange-border bg-rally-orange-soft px-2.5 py-1 text-xs font-semibold text-rally-orange">
               Featured
             </span>
           ) : null}
@@ -40,7 +40,7 @@ export function RallyEventHeader({
         </div>
         <Link
           href={backHref}
-          className="inline-flex text-sm font-semibold text-red-700 hover:text-red-800"
+          className="inline-flex text-sm font-semibold text-rally-blue hover:text-rally-blue-hover"
         >
           {backLabel}
         </Link>

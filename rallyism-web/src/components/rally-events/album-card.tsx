@@ -8,7 +8,7 @@ export function AlbumCard({ album }: { album: RallyEventAlbum }) {
   return (
     <Link
       href={`/rally-events/${album.rallyEventId}/albums/${album.id}`}
-      className="group block overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-red-200 hover:shadow-md"
+      className="group block overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-rally-blue-border hover:shadow-md"
     >
       {album.coverImageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
@@ -20,7 +20,7 @@ export function AlbumCard({ album }: { album: RallyEventAlbum }) {
       ) : null}
       <div className="space-y-4 p-5">
         <div>
-          <h3 className="text-lg font-semibold tracking-normal text-zinc-950 group-hover:text-red-700">
+          <h3 className="text-lg font-semibold tracking-normal text-zinc-950 group-hover:text-rally-blue">
             {album.title}
           </h3>
           <p className="mt-1 text-sm text-zinc-500">
@@ -37,7 +37,7 @@ export function AlbumCard({ album }: { album: RallyEventAlbum }) {
           videosCount={album.videosCount}
           showAlbums={false}
         />
-        <span className="inline-flex text-sm font-semibold text-red-700">
+        <span className="inline-flex text-sm font-semibold text-rally-blue">
           View album
         </span>
       </div>

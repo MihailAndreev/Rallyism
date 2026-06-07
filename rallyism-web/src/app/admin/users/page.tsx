@@ -111,7 +111,8 @@ function ActionButton({
   variant?: "primary" | "secondary" | "danger";
 }) {
   const classes = {
-    primary: "border-red-600 bg-red-600 text-white hover:bg-red-700",
+    primary:
+      "border-rally-blue bg-rally-blue text-white hover:bg-rally-blue-hover",
     secondary: "border-zinc-300 bg-white text-zinc-900 hover:border-zinc-400 hover:bg-zinc-100",
     danger: "border-red-200 bg-red-50 text-red-700 hover:bg-red-100",
   };
@@ -229,7 +230,7 @@ function AdminAccessDenied() {
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-14 sm:px-6 lg:px-8">
       <section className="rounded-lg border border-zinc-200 bg-white p-6 text-center shadow-sm sm:p-8">
-        <p className="text-sm font-semibold uppercase text-red-700">
+        <p className="text-sm font-semibold uppercase text-rally-blue">
           Admin access required
         </p>
         <h1 className="mt-3 text-3xl font-semibold tracking-normal text-zinc-950">
@@ -240,7 +241,7 @@ function AdminAccessDenied() {
         </p>
         <Link
           href="/dashboard"
-          className="mt-6 inline-flex h-11 items-center justify-center rounded-md bg-red-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700"
+          className="mt-6 inline-flex h-11 items-center justify-center rounded-md bg-rally-blue px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-rally-blue-hover"
         >
           Back to Dashboard
         </Link>
@@ -275,7 +276,7 @@ export default async function AdminUsersPage({
       <div className="flex flex-wrap items-center gap-3">
         <Link
           href="/dashboard"
-          className="inline-flex text-sm font-semibold text-red-700 hover:text-red-800"
+          className="inline-flex text-sm font-semibold text-rally-blue hover:text-rally-blue-hover"
         >
           Back to Dashboard
         </Link>
@@ -290,7 +291,7 @@ export default async function AdminUsersPage({
       <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase text-red-700">
+            <p className="text-sm font-semibold uppercase text-rally-blue">
               Admin
             </p>
             <h1 className="mt-3 text-4xl font-semibold tracking-normal text-zinc-950">
@@ -338,7 +339,7 @@ export default async function AdminUsersPage({
                 href={getAdminUsersHref({ status: option.value })}
                 className={`flex-1 rounded px-3 py-1.5 text-center text-sm font-semibold transition sm:flex-none ${
                   usersPage.status === option.value
-                    ? "bg-red-600 text-white"
+                    ? "bg-rally-blue text-white"
                     : "text-zinc-600 hover:bg-zinc-100"
                 }`}
               >

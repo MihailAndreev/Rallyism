@@ -4,7 +4,7 @@ export default function AboutPage() {
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
       <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
-        <p className="text-sm font-semibold uppercase text-red-700">
+        <p className="text-sm font-semibold uppercase text-rally-blue">
           About Rallyism
         </p>
         <h1 className="mt-3 text-4xl font-semibold tracking-normal text-zinc-950">
@@ -38,7 +38,7 @@ export default function AboutPage() {
         <div className="mt-8">
           <Link
             href="/"
-            className="inline-flex h-11 items-center justify-center rounded-md bg-red-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700"
+            className="inline-flex h-11 items-center justify-center rounded-md bg-rally-blue px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-rally-blue-hover"
           >
             Browse Rallyism
           </Link>

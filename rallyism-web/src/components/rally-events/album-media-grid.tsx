@@ -78,7 +78,7 @@ function ModeButton({
       type="button"
       className={`inline-flex h-9 items-center justify-center rounded-md px-3 text-sm font-semibold transition ${
         active
-          ? "bg-zinc-950 text-white hover:bg-zinc-800"
+          ? "bg-rally-blue text-white hover:bg-rally-blue-hover"
           : "border border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-100"
       }`}
       onClick={onClick}
@@ -319,8 +319,10 @@ function PhotoTile({
 }) {
   const imageUrl = getPhotoImageUrl(item);
   const interactiveClass =
-    "group relative block aspect-square overflow-hidden rounded-md border bg-zinc-100 shadow-sm transition hover:border-red-200 hover:shadow-md";
-  const borderClass = selected ? "border-red-500 ring-2 ring-red-500" : "border-zinc-200";
+    "group relative block aspect-square overflow-hidden rounded-md border bg-zinc-100 shadow-sm transition hover:border-rally-blue-border hover:shadow-md";
+  const borderClass = selected
+    ? "border-rally-blue ring-2 ring-rally-blue"
+    : "border-zinc-200";
 
   const image = imageUrl ? (
     // eslint-disable-next-line @next/next/no-img-element
@@ -350,13 +352,15 @@ function PhotoTile({
           {image}
           <span
             className={`pointer-events-none absolute inset-0 transition ${
-              selected ? "bg-red-600/20" : "bg-black/0 group-hover:bg-black/10"
+              selected
+                ? "bg-rally-blue/20"
+                : "bg-black/0 group-hover:bg-black/10"
             }`}
           />
           <span
             className={`pointer-events-none absolute left-2 top-2 z-20 inline-flex h-7 min-w-7 items-center justify-center rounded-full border px-2 text-[10px] font-bold uppercase shadow-sm ${
               selected
-                ? "border-red-600 bg-red-600 text-white"
+                ? "border-rally-blue bg-rally-blue text-white"
                 : "border-white/80 bg-black/55 text-white"
             }`}
           >
@@ -418,12 +422,14 @@ function VideoTile({
       </span>
     </>
   );
-  const borderClass = selected ? "border-red-500 ring-2 ring-red-500" : "border-zinc-200";
+  const borderClass = selected
+    ? "border-rally-blue ring-2 ring-rally-blue"
+    : "border-zinc-200";
 
   if (mode === "selectVideos" && item.canManage) {
     return (
       <article
-        className={`group relative aspect-square overflow-hidden rounded-md border bg-white shadow-sm transition hover:border-red-200 hover:shadow-md ${borderClass}`}
+        className={`group relative aspect-square overflow-hidden rounded-md border bg-white shadow-sm transition hover:border-rally-blue-border hover:shadow-md ${borderClass}`}
       >
         <button
           type="button"
@@ -437,13 +443,15 @@ function VideoTile({
           {content}
           <span
             className={`pointer-events-none absolute inset-0 transition ${
-              selected ? "bg-red-600/20" : "bg-black/0 group-hover:bg-black/10"
+              selected
+                ? "bg-rally-blue/20"
+                : "bg-black/0 group-hover:bg-black/10"
             }`}
           />
           <span
             className={`pointer-events-none absolute right-2 top-2 z-20 inline-flex h-7 min-w-7 items-center justify-center rounded-full border px-2 text-[10px] font-bold uppercase shadow-sm ${
               selected
-                ? "border-red-600 bg-red-600 text-white"
+                ? "border-rally-blue bg-rally-blue text-white"
                 : "border-white/80 bg-black/55 text-white"
             }`}
           >
@@ -455,7 +463,7 @@ function VideoTile({
   }
 
   return (
-    <article className="group relative aspect-square overflow-hidden rounded-md border border-zinc-200 bg-white shadow-sm transition hover:border-red-200 hover:shadow-md">
+    <article className="group relative aspect-square overflow-hidden rounded-md border border-zinc-200 bg-white shadow-sm transition hover:border-rally-blue-border hover:shadow-md">
       {item.youtubeUrl ? (
         <a
           href={item.youtubeUrl}

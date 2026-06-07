@@ -30,7 +30,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
           autoComplete="new-password"
           required
           minLength={6}
-          className="h-12 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-red-500 focus:ring-2 focus:ring-red-100"
+          className="h-12 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-rally-blue focus:ring-2 focus:ring-rally-blue-soft"
           placeholder="Create a new password"
         />
       </div>
@@ -48,7 +48,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
           autoComplete="new-password"
           required
           minLength={6}
-          className="h-12 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-red-500 focus:ring-2 focus:ring-red-100"
+          className="h-12 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-rally-blue focus:ring-2 focus:ring-rally-blue-soft"
           placeholder="Repeat your new password"
         />
       </div>
@@ -61,13 +61,13 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
       <button
         type="submit"
         disabled={isPending}
-        className="h-12 w-full rounded-md bg-red-600 px-5 text-base font-semibold text-white shadow-sm transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
+        className="h-12 w-full rounded-md bg-rally-blue px-5 text-base font-semibold text-white shadow-sm transition hover:bg-rally-blue-hover focus:outline-none focus:ring-2 focus:ring-rally-blue focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
       >
         {isPending ? "Resetting password..." : "Reset password"}
       </button>
       <p className="text-center text-sm text-zinc-600">
         Need a new link?{" "}
-        <Link href="/forgot-password" className="font-semibold text-red-700">
+        <Link href="/forgot-password" className="font-semibold text-rally-blue">
           Start again
         </Link>
       </p>

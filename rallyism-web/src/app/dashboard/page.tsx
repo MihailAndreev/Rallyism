@@ -25,7 +25,7 @@ export default async function DashboardPage() {
       <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase text-red-700">
+            <p className="text-sm font-semibold uppercase text-rally-blue">
               Dashboard
             </p>
             <h1 className="mt-3 text-4xl font-semibold tracking-normal text-zinc-950">
@@ -42,7 +42,7 @@ export default async function DashboardPage() {
             </p>
             <Link
               href="/rally-events/new"
-              className="inline-flex h-10 items-center justify-center rounded-md bg-red-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700"
+              className="inline-flex h-10 items-center justify-center rounded-md bg-rally-blue px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-rally-blue-hover"
             >
               Create rally event
             </Link>

@@ -56,7 +56,7 @@ export default async function RallyEventPage({ params }: RallyEventPageProps) {
       <div className="flex flex-wrap items-center gap-3">
         <Link
           href={backHref}
-          className="inline-flex text-sm font-semibold text-red-700 hover:text-red-800"
+          className="inline-flex text-sm font-semibold text-rally-blue hover:text-rally-blue-hover"
         >
           {backLabel}
         </Link>
@@ -142,18 +142,20 @@ export default async function RallyEventPage({ params }: RallyEventPageProps) {
           {canManageEvent ? (
             <section className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
               <h2 className="text-lg font-semibold text-zinc-950">Manage</h2>
-              <Link
-                href={`/rally-events/${event.id}/edit`}
-                className="mt-4 inline-flex h-10 items-center justify-center rounded-md border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-900 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-100"
-              >
-                Edit event
-              </Link>
-              <Link
-                href={`/rally-events/${event.id}/albums/new`}
-                className="mt-3 inline-flex h-10 items-center justify-center rounded-md bg-red-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700"
-              >
-                Create album
-              </Link>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <Link
+                  href={`/rally-events/${event.id}/edit`}
+                  className="inline-flex h-10 items-center justify-center rounded-md border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-900 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-100"
+                >
+                  Edit event
+                </Link>
+                <Link
+                  href={`/rally-events/${event.id}/albums/new`}
+                  className="inline-flex h-10 items-center justify-center rounded-md bg-rally-blue px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-rally-blue-hover"
+                >
+                  Create album
+                </Link>
+              </div>
             </section>
           ) : null}
         </aside>

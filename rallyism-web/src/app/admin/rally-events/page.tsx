@@ -145,7 +145,7 @@ function AdminAccessDenied() {
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-14 sm:px-6 lg:px-8">
       <section className="rounded-lg border border-zinc-200 bg-white p-6 text-center shadow-sm sm:p-8">
-        <p className="text-sm font-semibold uppercase text-red-700">
+        <p className="text-sm font-semibold uppercase text-rally-blue">
           Admin access required
         </p>
         <h1 className="mt-3 text-3xl font-semibold tracking-normal text-zinc-950">
@@ -156,7 +156,7 @@ function AdminAccessDenied() {
         </p>
         <Link
           href="/dashboard"
-          className="mt-6 inline-flex h-11 items-center justify-center rounded-md bg-red-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700"
+          className="mt-6 inline-flex h-11 items-center justify-center rounded-md bg-rally-blue px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-rally-blue-hover"
         >
           Back to Dashboard
         </Link>
@@ -170,7 +170,7 @@ function AdminLinks() {
     <div className="flex flex-wrap items-center gap-3">
       <Link
         href="/dashboard"
-        className="inline-flex text-sm font-semibold text-red-700 hover:text-red-800"
+        className="inline-flex text-sm font-semibold text-rally-blue hover:text-rally-blue-hover"
       >
         Back to Dashboard
       </Link>
@@ -252,7 +252,7 @@ export default async function AdminRallyEventsPage({
       <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase text-red-700">
+            <p className="text-sm font-semibold uppercase text-rally-blue">
               Admin
             </p>
             <h1 className="mt-3 text-4xl font-semibold tracking-normal text-zinc-950">
@@ -268,7 +268,7 @@ export default async function AdminRallyEventsPage({
             </p>
             <Link
               href="/rally-events/new"
-              className="inline-flex h-10 items-center justify-center rounded-md bg-red-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700"
+              className="inline-flex h-10 items-center justify-center rounded-md bg-rally-blue px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-rally-blue-hover"
             >
               Create rally event
             </Link>
@@ -285,7 +285,7 @@ export default async function AdminRallyEventsPage({
               name="q"
               defaultValue={eventsPage.search}
               placeholder="Title, rally, country, creator"
-              className="h-10 rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-950 shadow-sm outline-none transition placeholder:text-zinc-400 focus:border-red-500 focus:ring-2 focus:ring-red-100"
+              className="h-10 rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-950 shadow-sm outline-none transition placeholder:text-zinc-400 focus:border-rally-blue focus:ring-2 focus:ring-rally-blue-soft"
             />
           </label>
           <label className="grid gap-1 text-sm font-semibold text-zinc-700">
@@ -293,7 +293,7 @@ export default async function AdminRallyEventsPage({
             <select
               name="visibility"
               defaultValue={eventsPage.visibility}
-              className="h-10 rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-950 shadow-sm outline-none transition focus:border-red-500 focus:ring-2 focus:ring-red-100"
+              className="h-10 rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-950 shadow-sm outline-none transition focus:border-rally-blue focus:ring-2 focus:ring-rally-blue-soft"
             >
               {visibilityFilters.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -307,7 +307,7 @@ export default async function AdminRallyEventsPage({
             <select
               name="championship"
               defaultValue={eventsPage.championship}
-              className="h-10 rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-950 shadow-sm outline-none transition focus:border-red-500 focus:ring-2 focus:ring-red-100"
+              className="h-10 rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-950 shadow-sm outline-none transition focus:border-rally-blue focus:ring-2 focus:ring-rally-blue-soft"
             >
               {championshipFilters.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -324,7 +324,7 @@ export default async function AdminRallyEventsPage({
               min="1950"
               max="2100"
               defaultValue={eventsPage.year ?? ""}
-              className="h-10 rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-950 shadow-sm outline-none transition focus:border-red-500 focus:ring-2 focus:ring-red-100"
+              className="h-10 rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-950 shadow-sm outline-none transition focus:border-rally-blue focus:ring-2 focus:ring-rally-blue-soft"
             />
           </label>
           <button
@@ -373,7 +373,7 @@ export default async function AdminRallyEventsPage({
                         {event.title}
                       </h3>
                       {event.featured ? (
-                        <span className="inline-flex rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-700">
+                        <span className="inline-flex rounded-md border border-rally-orange-border bg-rally-orange-soft px-2 py-1 text-xs font-semibold text-rally-orange">
                           Featured
                         </span>
                       ) : null}

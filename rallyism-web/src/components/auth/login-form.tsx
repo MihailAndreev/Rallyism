@@ -30,7 +30,7 @@ export function LoginForm({ from, message = "" }: LoginFormProps) {
           type="email"
           autoComplete="email"
           required
-          className="h-12 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-red-500 focus:ring-2 focus:ring-red-100"
+          className="h-12 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-rally-blue focus:ring-2 focus:ring-rally-blue-soft"
           placeholder="you@example.com"
         />
       </div>
@@ -44,7 +44,7 @@ export function LoginForm({ from, message = "" }: LoginFormProps) {
           type="password"
           autoComplete="current-password"
           required
-          className="h-12 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-red-500 focus:ring-2 focus:ring-red-100"
+          className="h-12 w-full rounded-md border border-zinc-300 bg-white px-3 text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-rally-blue focus:ring-2 focus:ring-rally-blue-soft"
           placeholder="Enter your password"
         />
       </div>
@@ -59,18 +59,18 @@ export function LoginForm({ from, message = "" }: LoginFormProps) {
       <button
         type="submit"
         disabled={isPending}
-        className="h-12 w-full rounded-md bg-red-600 px-5 text-base font-semibold text-white shadow-sm transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+        className="h-12 w-full rounded-md bg-rally-blue px-5 text-base font-semibold text-white shadow-sm transition hover:bg-rally-blue-hover focus:outline-none focus:ring-2 focus:ring-rally-blue focus:ring-offset-2"
       >
         {isPending ? "Logging in..." : "Login"}
       </button>
       <p className="text-center text-sm text-zinc-600">
-        <Link href="/forgot-password" className="font-semibold text-red-700">
+        <Link href="/forgot-password" className="font-semibold text-rally-blue">
           Forgot password?
         </Link>
       </p>
       <p className="text-center text-sm text-zinc-600">
         New to Rallyism?{" "}
-        <Link href="/register" className="font-semibold text-red-700">
+        <Link href="/register" className="font-semibold text-rally-blue">
           Create an account
         </Link>
       </p>

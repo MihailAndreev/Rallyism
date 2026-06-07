@@ -19,7 +19,7 @@ function parsePage(value: string | undefined) {
 
 function PublicRallyEventCard({ event }: { event: RallyEventSummary }) {
   return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-red-200 hover:shadow-md">
+    <article className="group flex h-full flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-rally-blue-border hover:shadow-md">
       <Link href={`/rally-events/${event.id}`} className="block">
         {event.coverImageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -37,14 +37,14 @@ function PublicRallyEventCard({ event }: { event: RallyEventSummary }) {
       <div className="flex flex-1 flex-col gap-5 p-5">
         <div className="flex flex-wrap items-center gap-2">
           {event.featured ? (
-            <span className="rounded-md border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700">
+            <span className="rounded-md border border-rally-orange-border bg-rally-orange-soft px-2.5 py-1 text-xs font-semibold text-rally-orange">
               Featured
             </span>
           ) : null}
         </div>
 
         <div>
-          <h2 className="text-xl font-semibold tracking-normal text-zinc-950 group-hover:text-red-700">
+          <h2 className="text-xl font-semibold tracking-normal text-zinc-950 group-hover:text-rally-blue">
             <Link href={`/rally-events/${event.id}`}>{event.title}</Link>
           </h2>
           <p className="mt-1 text-sm font-medium text-zinc-600">
@@ -61,7 +61,7 @@ function PublicRallyEventCard({ event }: { event: RallyEventSummary }) {
           />
           <Link
             href={`/rally-events/${event.id}`}
-            className="inline-flex h-10 items-center justify-center rounded-md bg-red-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700"
+            className="inline-flex h-10 items-center justify-center rounded-md bg-rally-blue px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-rally-blue-hover"
           >
             Open event
           </Link>
@@ -82,7 +82,7 @@ export default async function Home({ searchParams }: HomeProps) {
       <section className="space-y-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase text-red-700">
+            <p className="text-sm font-semibold uppercase text-rally-blue">
               Rallyism
             </p>
             <h1 className="mt-3 text-4xl font-semibold tracking-normal text-zinc-950 sm:text-5xl">
@@ -97,7 +97,7 @@ export default async function Home({ searchParams }: HomeProps) {
             {user ? (
               <Link
                 href="/dashboard"
-                className="inline-flex h-11 items-center justify-center rounded-md bg-red-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700"
+                className="inline-flex h-11 items-center justify-center rounded-md bg-rally-blue px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-rally-blue-hover"
               >
                 Dashboard
               </Link>
@@ -105,7 +105,7 @@ export default async function Home({ searchParams }: HomeProps) {
               <>
                 <Link
                   href="/login"
-                  className="inline-flex h-11 items-center justify-center rounded-md bg-red-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700"
+                  className="inline-flex h-11 items-center justify-center rounded-md bg-rally-blue px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-rally-blue-hover"
                 >
                   Login
                 </Link>
@@ -139,7 +139,7 @@ export default async function Home({ searchParams }: HomeProps) {
         </section>
       ) : (
         <section className="rounded-lg border border-zinc-200 bg-white p-8 text-center shadow-sm">
-          <p className="text-sm font-semibold uppercase text-red-700">
+          <p className="text-sm font-semibold uppercase text-rally-blue">
             No public events
           </p>
           <h2 className="mt-3 text-2xl font-semibold tracking-normal text-zinc-950">

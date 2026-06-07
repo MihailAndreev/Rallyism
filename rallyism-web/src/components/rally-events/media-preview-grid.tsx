@@ -59,7 +59,7 @@ export function MediaPreviewGrid({
               onClick={() => setFilter(option.value as MediaFilter)}
               className={`rounded px-3 py-1.5 text-sm font-semibold transition ${
                 filter === option.value
-                  ? "bg-red-600 text-white"
+                  ? "bg-rally-blue text-white"
                   : "text-zinc-600 hover:bg-zinc-100"
               }`}
             >

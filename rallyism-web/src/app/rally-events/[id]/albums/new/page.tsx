@@ -52,13 +52,13 @@ export default async function NewAlbumPage({
     <div className="mx-auto w-full max-w-4xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
       <Link
         href={`/rally-events/${rallyEventId}`}
-        className="inline-flex text-sm font-semibold text-red-700 hover:text-red-800"
+        className="inline-flex text-sm font-semibold text-rally-blue hover:text-rally-blue-hover"
       >
         Back to rally event
       </Link>
 
       <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
-        <p className="text-sm font-semibold uppercase text-red-700">Album</p>
+        <p className="text-sm font-semibold uppercase text-rally-blue">Album</p>
         <h1 className="mt-3 text-4xl font-semibold tracking-normal text-zinc-950">
           Create album
         </h1>

@@ -73,13 +73,13 @@ export default async function EditVideoPage({
     <div className="mx-auto w-full max-w-4xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
       <Link
         href={`/rally-events/${rallyEventId}/albums/${parsedAlbumId}?filter=videos`}
-        className="inline-flex text-sm font-semibold text-red-700 hover:text-red-800"
+        className="inline-flex text-sm font-semibold text-rally-blue hover:text-rally-blue-hover"
       >
         Back to album videos
       </Link>
 
       <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
-        <p className="text-sm font-semibold uppercase text-red-700">
+        <p className="text-sm font-semibold uppercase text-rally-blue">
           YouTube video
         </p>
         <h1 className="mt-3 text-4xl font-semibold tracking-normal text-zinc-950">

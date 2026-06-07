@@ -13,7 +13,7 @@ export function RallyEventCard({
   return (
     <Link
       href={`/rally-events/${event.id}`}
-      className="group block overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-red-200 hover:shadow-md"
+      className="group block overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-rally-blue-border hover:shadow-md"
     >
       {event.coverImageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
@@ -29,14 +29,14 @@ export function RallyEventCard({
             {event.visibility}
           </span>
           {event.featured ? (
-            <span className="rounded-md border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700">
+            <span className="rounded-md border border-rally-orange-border bg-rally-orange-soft px-2.5 py-1 text-xs font-semibold text-rally-orange">
               Featured
             </span>
           ) : null}
         </div>
 
         <div>
-          <h2 className="text-xl font-semibold tracking-normal text-zinc-950 group-hover:text-red-700">
+          <h2 className="text-xl font-semibold tracking-normal text-zinc-950 group-hover:text-rally-blue">
             {event.title}
           </h2>
           <p className="mt-1 text-sm text-zinc-500">{event.rallyName}</p>
@@ -49,7 +49,7 @@ export function RallyEventCard({
           videosCount={event.videosCount}
         />
 
-        <div className="inline-flex text-sm font-semibold text-red-700">
+        <div className="inline-flex text-sm font-semibold text-rally-blue">
           View rally
         </div>
       </div>

@@ -3,11 +3,25 @@
 :root {
   --background: #fafaf9;
   --foreground: #09090b;
+  --rally-blue: #126faf;
+  --rally-blue-hover: #0c568b;
+  --rally-blue-soft: #e8f4fb;
+  --rally-blue-border: #b7dcf3;
+  --rally-orange: #f28c18;
+  --rally-orange-soft: #fff3e4;
+  --rally-orange-border: #ffd29a;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-rally-blue: var(--rally-blue);
+  --color-rally-blue-hover: var(--rally-blue-hover);
+  --color-rally-blue-soft: var(--rally-blue-soft);
+  --color-rally-blue-border: var(--rally-blue-border);
+  --color-rally-orange: var(--rally-orange);
+  --color-rally-orange-soft: var(--rally-orange-soft);
+  --color-rally-orange-border: var(--rally-orange-border);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

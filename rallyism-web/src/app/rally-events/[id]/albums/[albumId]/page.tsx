@@ -230,7 +230,7 @@ function getResultClass(tone: "success" | "warning" | "error") {
   }
 
   if (tone === "warning") {
-    return "border-amber-200 bg-amber-50 text-amber-800";
+    return "border-rally-orange-border bg-rally-orange-soft text-rally-orange";
   }
 
   return "border-red-200 bg-red-50 text-red-800";
@@ -337,7 +337,7 @@ export default async function AlbumPage({
     <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
       <Link
         href={`/rally-events/${rallyEventId}`}
-        className="inline-flex text-sm font-semibold text-red-700 hover:text-red-800"
+        className="inline-flex text-sm font-semibold text-rally-blue hover:text-rally-blue-hover"
       >
         Back to rally event
       </Link>
@@ -353,7 +353,7 @@ export default async function AlbumPage({
         ) : null}
         <div className="space-y-5 p-6 sm:p-8">
           <div>
-            <p className="text-sm font-semibold uppercase text-red-700">Album</p>
+            <p className="text-sm font-semibold uppercase text-rally-blue">Album</p>
             <h1 className="mt-3 text-4xl font-semibold tracking-normal text-zinc-950">
               {album.title}
             </h1>
@@ -377,7 +377,7 @@ export default async function AlbumPage({
             <div className="flex flex-wrap gap-3">
               <Link
                 href={`/rally-events/${rallyEventId}/albums/${parsedAlbumId}/photos/upload`}
-                className="inline-flex h-10 items-center justify-center rounded-md bg-red-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700"
+                className="inline-flex h-10 items-center justify-center rounded-md bg-rally-blue px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-rally-blue-hover"
               >
                 Upload photos
               </Link>
@@ -463,7 +463,7 @@ export default async function AlbumPage({
                 })}
                 className={`flex-1 rounded px-3 py-1.5 text-center text-sm font-semibold transition sm:flex-none ${
                   mediaPage.filter === option.value
-                    ? "bg-red-600 text-white"
+                    ? "bg-rally-blue text-white"
                     : "text-zinc-600 hover:bg-zinc-100"
                 }`}
               >

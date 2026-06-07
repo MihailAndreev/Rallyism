@@ -27,13 +27,13 @@ export default async function TagsPage({ searchParams }: TagsPageProps) {
     <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
       <Link
         href="/dashboard"
-        className="inline-flex text-sm font-semibold text-red-700 hover:text-red-800"
+        className="inline-flex text-sm font-semibold text-rally-blue hover:text-rally-blue-hover"
       >
         Back to dashboard
       </Link>
 
       <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
-        <p className="text-sm font-semibold uppercase text-red-700">Tags</p>
+        <p className="text-sm font-semibold uppercase text-rally-blue">Tags</p>
         <h1 className="mt-3 text-4xl font-semibold tracking-normal text-zinc-950">
           Browse photo tags
         </h1>
@@ -45,14 +45,14 @@ export default async function TagsPage({ searchParams }: TagsPageProps) {
       <section className="space-y-5">
         <form className="flex flex-col gap-3 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm sm:flex-row">
           <input
-            className="h-11 flex-1 rounded-md border border-zinc-300 bg-white px-3 text-sm text-zinc-950 shadow-sm outline-none transition placeholder:text-zinc-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
+            className="h-11 flex-1 rounded-md border border-zinc-300 bg-white px-3 text-sm text-zinc-950 shadow-sm outline-none transition placeholder:text-zinc-400 focus:border-rally-blue focus:ring-2 focus:ring-rally-blue/20"
             defaultValue={query}
             name="q"
             placeholder="Search tags, for example Lappi"
           />
           <button
             type="submit"
-            className="inline-flex h-11 items-center justify-center rounded-md bg-red-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700"
+            className="inline-flex h-11 items-center justify-center rounded-md bg-rally-blue px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-rally-blue-hover"
           >
             Search
           </button>
@@ -64,7 +64,7 @@ export default async function TagsPage({ searchParams }: TagsPageProps) {
               <Link
                 key={tag.id}
                 href={`/tags/${tag.slug}`}
-                className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-800 shadow-sm transition hover:border-red-200 hover:text-red-700"
+                className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-800 shadow-sm transition hover:border-rally-blue-border hover:text-rally-blue"
               >
                 {tag.name}
               </Link>

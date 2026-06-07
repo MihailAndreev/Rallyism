@@ -43,9 +43,9 @@ function Field({
 }
 
 const inputClass =
-  "h-11 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm text-zinc-950 shadow-sm outline-none transition placeholder:text-zinc-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/20";
+  "h-11 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm text-zinc-950 shadow-sm outline-none transition placeholder:text-zinc-400 focus:border-rally-blue focus:ring-2 focus:ring-rally-blue/20";
 const textareaClass =
-  "min-h-32 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm leading-6 text-zinc-950 shadow-sm outline-none transition placeholder:text-zinc-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/20";
+  "min-h-32 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm leading-6 text-zinc-950 shadow-sm outline-none transition placeholder:text-zinc-400 focus:border-rally-blue focus:ring-2 focus:ring-rally-blue/20";
 
 export function RallyEventForm({
   action,
@@ -187,7 +187,7 @@ export function RallyEventForm({
         {currentUserIsAdmin ? (
           <label className="flex items-center gap-3 rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3">
             <input
-              className="h-4 w-4 rounded border-zinc-300 text-red-600 focus:ring-red-500"
+              className="h-4 w-4 rounded border-zinc-300 text-rally-blue focus:ring-rally-blue"
               defaultChecked={event?.featured ?? false}
               name="featured"
               type="checkbox"
@@ -199,7 +199,7 @@ export function RallyEventForm({
         <div className="flex flex-col gap-3 sm:flex-row">
           <button
             type="submit"
-            className="inline-flex h-11 items-center justify-center rounded-md bg-red-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700"
+            className="inline-flex h-11 items-center justify-center rounded-md bg-rally-blue px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-rally-blue-hover"
           >
             {submitLabel}
           </button>

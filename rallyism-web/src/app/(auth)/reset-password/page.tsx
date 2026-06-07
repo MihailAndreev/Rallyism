@@ -18,7 +18,7 @@ function InvalidResetLink() {
       </div>
       <Link
         href="/forgot-password"
-        className="inline-flex h-11 items-center justify-center rounded-md bg-red-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700"
+        className="inline-flex h-11 items-center justify-center rounded-md bg-rally-blue px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-rally-blue-hover"
       >
         Create a new reset link
       </Link>

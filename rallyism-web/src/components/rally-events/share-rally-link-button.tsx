@@ -34,7 +34,7 @@ export function ShareRallyLinkButton() {
       <button
         type="button"
         onClick={handleCopy}
-        className="h-11 w-full rounded-md bg-red-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+        className="h-11 w-full rounded-md bg-rally-blue px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-rally-blue-hover focus:outline-none focus:ring-2 focus:ring-rally-blue focus:ring-offset-2"
       >
         Share rally link
       </button>

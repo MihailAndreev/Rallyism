@@ -57,13 +57,13 @@ export default async function TagDetailsPage({
     <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
       <Link
         href="/tags"
-        className="inline-flex text-sm font-semibold text-red-700 hover:text-red-800"
+        className="inline-flex text-sm font-semibold text-rally-blue hover:text-rally-blue-hover"
       >
         Back to tags
       </Link>
 
       <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
-        <p className="text-sm font-semibold uppercase text-red-700">Tag</p>
+        <p className="text-sm font-semibold uppercase text-rally-blue">Tag</p>
         <h1 className="mt-3 text-4xl font-semibold tracking-normal text-zinc-950">
           {result.tag.name}
         </h1>
@@ -82,7 +82,7 @@ export default async function TagDetailsPage({
                 <Link
                   key={item.id}
                   href={`/rally-events/${item.rallyEventId}/albums/${item.albumId}?photo=${item.id}`}
-                  className="group overflow-hidden rounded-md border border-zinc-200 bg-white shadow-sm transition hover:border-red-200 hover:shadow-md"
+                  className="group overflow-hidden rounded-md border border-zinc-200 bg-white shadow-sm transition hover:border-rally-blue-border hover:shadow-md"
                 >
                   <div className="aspect-square bg-zinc-100">
                     {imageUrl ? (
