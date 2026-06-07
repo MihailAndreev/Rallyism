@@ -34,6 +34,10 @@ export async function loginAction(
     return { error: "Invalid email or password." };
   }
 
+  if (user.disabledAt) {
+    return { error: "This account has been disabled." };
+  }
+
   await createSessionCookie({
     userId: user.id,
     email: user.email,

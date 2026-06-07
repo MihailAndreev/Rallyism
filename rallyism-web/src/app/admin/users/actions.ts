@@ -7,6 +7,8 @@ import { requireAdmin } from "@/lib/auth/authorization";
 import {
   approveUser,
   changeUserRole,
+  disableUser,
+  reactivateUser,
   rejectUser,
   UserManagementError,
 } from "@/services/users";
@@ -106,5 +108,34 @@ export async function changeUserRoleAction(formData: FormData) {
         role,
       }),
     role === "admin" ? "User is now an admin." : "User is now a regular user.",
+  );
+}
+
+export async function disableUserAction(formData: FormData) {
+  const userId = parseUserId(formData.get("userId"));
+
+  if (!userId) {
+    redirect(getReturnPath(formData, "Invalid user selected.", "error"));
+  }
+
+  await runAdminMutation(
+    formData,
+    async (adminUserId) =>
+      disableUser({ targetUserId: userId, actorUserId: adminUserId }),
+    "User disabled.",
+  );
+}
+
+export async function reactivateUserAction(formData: FormData) {
+  const userId = parseUserId(formData.get("userId"));
+
+  if (!userId) {
+    redirect(getReturnPath(formData, "Invalid user selected.", "error"));
+  }
+
+  await runAdminMutation(
+    formData,
+    async () => reactivateUser(userId),
+    "User reactivated.",
   );
 }

@@ -69,6 +69,7 @@ export const users = pgTable(
     passwordResetExpiresAt: timestamp("password_reset_expires_at", {
       withTimezone: true,
     }),
+    disabledAt: timestamp("disabled_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

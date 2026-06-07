@@ -4,6 +4,8 @@ import type { ReactNode } from "react";
 import {
   approveUserAction,
   changeUserRoleAction,
+  disableUserAction,
+  reactivateUserAction,
   rejectUserAction,
 } from "@/app/admin/users/actions";
 import { formatDateTime } from "@/components/rally-events/rally-event-format";
@@ -83,6 +85,20 @@ function RoleBadge({ role }: { role: AdminUserListItem["role"] }) {
   return (
     <span className="inline-flex rounded-md border border-zinc-200 bg-white px-2 py-1 text-xs font-semibold capitalize text-zinc-700">
       {role}
+    </span>
+  );
+}
+
+function AccountStateBadge({ disabledAt }: { disabledAt: Date | null }) {
+  return (
+    <span
+      className={`inline-flex rounded-md border px-2 py-1 text-xs font-semibold ${
+        disabledAt
+          ? "border-red-200 bg-red-50 text-red-700"
+          : "border-emerald-200 bg-emerald-50 text-emerald-700"
+      }`}
+    >
+      {disabledAt ? "Disabled" : "Active"}
     </span>
   );
 }
@@ -183,6 +199,23 @@ function UserActions({
           <ActionButton>Make admin</ActionButton>
         </UserActionForm>
       )}
+      {user.disabledAt ? (
+        <UserActionForm
+          action={reactivateUserAction}
+          userId={user.id}
+          returnTo={returnTo}
+        >
+          <ActionButton variant="primary">Reactivate</ActionButton>
+        </UserActionForm>
+      ) : !isSelf ? (
+        <UserActionForm
+          action={disableUserAction}
+          userId={user.id}
+          returnTo={returnTo}
+        >
+          <ActionButton variant="danger">Disable</ActionButton>
+        </UserActionForm>
+      ) : null}
       {isSelf ? (
         <span className="inline-flex h-9 items-center rounded-md border border-zinc-200 bg-zinc-50 px-3 text-xs font-semibold text-zinc-500">
           Current user
@@ -245,6 +278,12 @@ export default async function AdminUsersPage({
           className="inline-flex text-sm font-semibold text-red-700 hover:text-red-800"
         >
           Back to Dashboard
+        </Link>
+        <Link
+          href="/admin/rally-events"
+          className="inline-flex text-sm font-semibold text-zinc-600 hover:text-zinc-950"
+        >
+          Rally events
         </Link>
       </div>
 
@@ -311,10 +350,11 @@ export default async function AdminUsersPage({
 
         {usersPage.users.length > 0 ? (
           <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm">
-            <div className="hidden grid-cols-[minmax(0,1.3fr)_120px_140px_170px_minmax(260px,1fr)] gap-4 border-b border-zinc-200 bg-zinc-50 px-4 py-3 text-xs font-semibold uppercase text-zinc-500 lg:grid">
+            <div className="hidden grid-cols-[minmax(0,1.3fr)_110px_130px_130px_160px_minmax(260px,1fr)] gap-4 border-b border-zinc-200 bg-zinc-50 px-4 py-3 text-xs font-semibold uppercase text-zinc-500 lg:grid">
               <div>User</div>
               <div>Role</div>
               <div>Status</div>
+              <div>Account</div>
               <div>Created</div>
               <div>Actions</div>
             </div>
@@ -322,7 +362,7 @@ export default async function AdminUsersPage({
               {usersPage.users.map((user) => (
                 <article
                   key={user.id}
-                  className="grid gap-4 px-4 py-4 lg:grid-cols-[minmax(0,1.3fr)_120px_140px_170px_minmax(260px,1fr)] lg:items-center"
+                  className="grid gap-4 px-4 py-4 lg:grid-cols-[minmax(0,1.3fr)_110px_130px_130px_160px_minmax(260px,1fr)] lg:items-center"
                 >
                   <div className="min-w-0">
                     <h3 className="break-words text-sm font-semibold text-zinc-950">
@@ -343,6 +383,12 @@ export default async function AdminUsersPage({
                       Status
                     </span>
                     <StatusBadge status={user.approvalStatus} />
+                  </div>
+                  <div>
+                    <span className="mb-1 block text-xs font-semibold uppercase text-zinc-500 lg:hidden">
+                      Account
+                    </span>
+                    <AccountStateBadge disabledAt={user.disabledAt} />
                   </div>
                   <div>
                     <span className="mb-1 block text-xs font-semibold uppercase text-zinc-500 lg:hidden">

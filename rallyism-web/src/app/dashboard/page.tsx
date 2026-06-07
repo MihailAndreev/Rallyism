@@ -53,12 +53,20 @@ export default async function DashboardPage() {
               Browse tags
             </Link>
             {isAdmin(user) ? (
-              <Link
-                href="/admin/users"
-                className="inline-flex h-10 items-center justify-center rounded-md border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-900 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-100"
-              >
-                Manage users
-              </Link>
+              <>
+                <Link
+                  href="/admin/rally-events"
+                  className="inline-flex h-10 items-center justify-center rounded-md border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-900 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-100"
+                >
+                  Manage content
+                </Link>
+                <Link
+                  href="/admin/users"
+                  className="inline-flex h-10 items-center justify-center rounded-md border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-900 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-100"
+                >
+                  Manage users
+                </Link>
+              </>
             ) : null}
           </div>
         </div>

@@ -1,4 +1,14 @@
-import { and, asc, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  ilike,
+  inArray,
+  or,
+  sql,
+  type SQL,
+} from "drizzle-orm";
 
 import { db } from "@/db";
 import { albums, mediaItems, mediaTags, rallyEvents, tags, users } from "@/db/schema";
@@ -204,6 +214,32 @@ export type RallyEventDetailsResult =
 
 export type PublicRallyEventsPage = {
   events: RallyEventSummary[];
+  currentPage: number;
+  pageSize: number;
+  totalEvents: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+};
+
+export type AdminRallyEventVisibilityFilter =
+  | "all"
+  | RallyEventVisibility;
+
+export type AdminRallyEventChampionshipFilter =
+  | "all"
+  | RallyEventChampionship;
+
+export type AdminRallyEventListItem = RallyEventSummary & {
+  creatorEmail: string | null;
+};
+
+export type AdminRallyEventsPage = {
+  events: AdminRallyEventListItem[];
+  visibility: AdminRallyEventVisibilityFilter;
+  championship: AdminRallyEventChampionshipFilter;
+  year: number | null;
+  search: string;
   currentPage: number;
   pageSize: number;
   totalEvents: number;
@@ -1163,6 +1199,131 @@ export async function getPublicRallyEventsPage(input: {
 
   return {
     events,
+    currentPage,
+    pageSize,
+    totalEvents: totalEvents ?? 0,
+    totalPages,
+    hasPreviousPage: currentPage > 1,
+    hasNextPage: currentPage < totalPages,
+  };
+}
+
+function getAdminRallyEventsWhereClause(input: {
+  visibility: AdminRallyEventVisibilityFilter;
+  championship: AdminRallyEventChampionshipFilter;
+  year: number | null;
+  search: string;
+}) {
+  const clauses: SQL[] = [];
+
+  if (input.visibility !== "all") {
+    clauses.push(eq(rallyEvents.visibility, input.visibility));
+  }
+
+  if (input.championship !== "all") {
+    clauses.push(eq(rallyEvents.championship, input.championship));
+  }
+
+  if (input.year) {
+    clauses.push(eq(rallyEvents.seasonYear, input.year));
+  }
+
+  if (input.search) {
+    const pattern = `%${input.search}%`;
+    const searchClause = or(
+      ilike(rallyEvents.title, pattern),
+      ilike(rallyEvents.rallyName, pattern),
+      ilike(rallyEvents.country, pattern),
+      ilike(users.name, pattern),
+      ilike(users.email, pattern),
+    );
+
+    if (searchClause) {
+      clauses.push(searchClause);
+    }
+  }
+
+  return clauses.length > 0 ? and(...clauses) : undefined;
+}
+
+export async function getAdminRallyEventsPage(input: {
+  visibility?: AdminRallyEventVisibilityFilter;
+  championship?: AdminRallyEventChampionshipFilter;
+  year?: number | null;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+} = {}): Promise<AdminRallyEventsPage> {
+  const visibility = input.visibility ?? "all";
+  const championship = input.championship ?? "all";
+  const year = input.year ?? null;
+  const search = normalizeTagName(input.search ?? "").slice(0, 120);
+  const pageSize = input.pageSize ?? 12;
+  const requestedPage =
+    input.page && Number.isInteger(input.page) && input.page > 0 ? input.page : 1;
+  const whereClause = getAdminRallyEventsWhereClause({
+    visibility,
+    championship,
+    year,
+    search,
+  });
+  const countQuery = db
+    .select({
+      totalEvents: sql<number>`count(${rallyEvents.id})::int`,
+    })
+    .from(rallyEvents)
+    .leftJoin(users, eq(rallyEvents.createdById, users.id))
+    .$dynamic();
+
+  if (whereClause) {
+    countQuery.where(whereClause);
+  }
+
+  const [{ totalEvents }] = await countQuery;
+  const totalPages = Math.max(1, Math.ceil((totalEvents ?? 0) / pageSize));
+  const currentPage = Math.min(requestedPage, totalPages);
+  const offset = (currentPage - 1) * pageSize;
+  const eventQuery = db
+    .select({
+      event: rallyEvents,
+      creatorName: users.name,
+      creatorEmail: users.email,
+    })
+    .from(rallyEvents)
+    .leftJoin(users, eq(rallyEvents.createdById, users.id))
+    .orderBy(desc(rallyEvents.updatedAt), desc(rallyEvents.createdAt), desc(rallyEvents.id))
+    .limit(pageSize)
+    .offset(offset)
+    .$dynamic();
+
+  if (whereClause) {
+    eventQuery.where(whereClause);
+  }
+
+  const eventRows = await eventQuery;
+  const eventIds = eventRows.map((row) => row.event.id);
+  const [albumCounts, mediaCounts] = await Promise.all([
+    getAlbumCountsByEvent(eventIds),
+    getMediaCountsByEvent(eventIds),
+  ]);
+  const events = eventRows.map((row) => {
+    const counts = normalizeCounts({
+      albumsCount: albumCounts.get(row.event.id),
+      ...mediaCounts.get(row.event.id),
+    });
+
+    return {
+      ...toRallyEventSummary(row.event, counts, row.creatorName),
+      creatorEmail: row.creatorEmail,
+    };
+  });
+
+  return {
+    events,
+    visibility,
+    championship,
+    year,
+    search,
     currentPage,
     pageSize,
     totalEvents: totalEvents ?? 0,

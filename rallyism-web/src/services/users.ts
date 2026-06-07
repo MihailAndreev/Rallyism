@@ -11,6 +11,7 @@ export type AuthUser = {
   photoUrl: string | null;
   role: "user" | "admin";
   approvalStatus: "pending" | "approved" | "rejected";
+  disabledAt: Date | null;
 };
 
 export type UserWithPassword = AuthUser & {
@@ -65,6 +66,7 @@ export async function findUserById(id: number): Promise<AuthUser | null> {
       photoUrl: users.photoUrl,
       role: users.role,
       approvalStatus: users.approvalStatus,
+      disabledAt: users.disabledAt,
     })
     .from(users)
     .where(eq(users.id, id))
@@ -84,6 +86,7 @@ export async function findUserWithPasswordByEmail(
       photoUrl: users.photoUrl,
       role: users.role,
       approvalStatus: users.approvalStatus,
+      disabledAt: users.disabledAt,
       passwordHash: users.passwordHash,
     })
     .from(users)
@@ -116,6 +119,7 @@ export async function createUser(input: {
       photoUrl: users.photoUrl,
       role: users.role,
       approvalStatus: users.approvalStatus,
+      disabledAt: users.disabledAt,
     });
 
   return user;
@@ -135,7 +139,13 @@ async function getAdminCountExcluding(userId: number) {
       adminCount: sql<number>`count(${users.id})::int`,
     })
     .from(users)
-    .where(and(eq(users.role, "admin"), ne(users.id, userId)));
+    .where(
+      and(
+        eq(users.role, "admin"),
+        ne(users.id, userId),
+        sql`${users.disabledAt} is null`,
+      ),
+    );
 
   return row?.adminCount ?? 0;
 }
@@ -173,6 +183,7 @@ export async function getAdminUsersPage(input: {
       photoUrl: users.photoUrl,
       role: users.role,
       approvalStatus: users.approvalStatus,
+      disabledAt: users.disabledAt,
       createdAt: users.createdAt,
       updatedAt: users.updatedAt,
     })
@@ -237,4 +248,51 @@ export async function changeUserRole(input: {
     .update(users)
     .set({ role: input.role, updatedAt: new Date() })
     .where(eq(users.id, input.targetUserId));
+}
+
+export async function disableUser(input: {
+  targetUserId: number;
+  actorUserId: number;
+}) {
+  if (input.targetUserId === input.actorUserId) {
+    throw new UserManagementError("You cannot disable your own account.");
+  }
+
+  const [targetUser] = await db
+    .select({
+      id: users.id,
+      role: users.role,
+      disabledAt: users.disabledAt,
+    })
+    .from(users)
+    .where(eq(users.id, input.targetUserId))
+    .limit(1);
+
+  if (!targetUser) {
+    throw new UserManagementError("User not found.");
+  }
+
+  if (targetUser.disabledAt) {
+    return;
+  }
+
+  if (targetUser.role === "admin") {
+    const remainingAdmins = await getAdminCountExcluding(input.targetUserId);
+
+    if (remainingAdmins === 0) {
+      throw new UserManagementError("At least one active admin account must remain.");
+    }
+  }
+
+  await db
+    .update(users)
+    .set({ disabledAt: new Date(), updatedAt: new Date() })
+    .where(eq(users.id, input.targetUserId));
+}
+
+export async function reactivateUser(userId: number) {
+  await db
+    .update(users)
+    .set({ disabledAt: null, updatedAt: new Date() })
+    .where(eq(users.id, userId));
 }
