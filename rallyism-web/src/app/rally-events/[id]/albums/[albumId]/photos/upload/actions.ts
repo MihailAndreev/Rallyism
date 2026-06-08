@@ -4,7 +4,11 @@ import { redirect } from "next/navigation";
 
 import { requireContributor } from "@/lib/auth/authorization";
 import {
+  createDirectPhotoUploadPlan,
+  finalizeDirectPhotoUpload,
   PhotoUploadValidationError,
+  type DirectPhotoUploadPlan,
+  type FinalizeDirectPhotoUploadInput,
   type PhotoUploadResult,
   uploadAlbumPhotos,
 } from "@/services/photo-uploads";
@@ -132,4 +136,94 @@ export async function uploadPhotosAction(formData: FormData) {
       warnings: result.warnings,
     }),
   );
+}
+
+export type CreateDirectPhotoUploadPlanActionResult =
+  | { status: "ready"; plan: DirectPhotoUploadPlan }
+  | { status: "error"; error: string };
+
+export async function createDirectPhotoUploadPlanAction(input: {
+  rallyEventId: number;
+  albumId: number;
+  files: { name: string; size: number; type: string }[];
+}): Promise<CreateDirectPhotoUploadPlanActionResult> {
+  const user = await requireContributor("/dashboard");
+
+  if (!user) {
+    return { status: "error", error: "Your account is not approved to upload photos." };
+  }
+
+  if (!Number.isInteger(input.rallyEventId) || !Number.isInteger(input.albumId)) {
+    return { status: "error", error: "The upload target is invalid." };
+  }
+
+  try {
+    const result = await createDirectPhotoUploadPlan({
+      rallyEventId: input.rallyEventId,
+      albumId: input.albumId,
+      currentUser: user,
+      files: input.files,
+    });
+
+    if (!("batchId" in result)) {
+      return {
+        status: "error",
+        error:
+          result.status === "not-found"
+            ? "This album could not be found."
+            : "You cannot upload photos to this album.",
+      };
+    }
+
+    return { status: "ready", plan: result };
+  } catch (error) {
+    return {
+      status: "error",
+      error:
+        error instanceof PhotoUploadValidationError
+          ? error.message
+          : "The photos could not be prepared for upload.",
+    };
+  }
+}
+
+export type FinalizeDirectPhotoUploadActionResult =
+  | { status: "ready"; result: PhotoUploadResult }
+  | { status: "error"; error: string };
+
+export async function finalizeDirectPhotoUploadAction(
+  values: FinalizeDirectPhotoUploadInput,
+): Promise<FinalizeDirectPhotoUploadActionResult> {
+  const user = await requireContributor("/dashboard");
+
+  if (!user) {
+    return { status: "error", error: "Your account is not approved to upload photos." };
+  }
+
+  try {
+    const result = await finalizeDirectPhotoUpload({
+      currentUser: user,
+      values,
+    });
+
+    if (!("uploaded" in result)) {
+      return {
+        status: "error",
+        error:
+          result.status === "not-found"
+            ? "This upload session could not be found."
+            : "You cannot upload photos to this album.",
+      };
+    }
+
+    return { status: "ready", result };
+  } catch (error) {
+    return {
+      status: "error",
+      error:
+        error instanceof PhotoUploadValidationError
+          ? error.message
+          : "The photos could not be saved after upload.",
+    };
+  }
 }

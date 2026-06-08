@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
-import { uploadPhotosAction } from "@/app/rally-events/[id]/albums/[albumId]/photos/upload/actions";
+import {
+  createDirectPhotoUploadPlanAction,
+  finalizeDirectPhotoUploadAction,
+} from "@/app/rally-events/[id]/albums/[albumId]/photos/upload/actions";
 import { PhotoUploadForm } from "@/components/rally-events/photo-upload-form";
 import { RallyAccessDenied } from "@/components/rally-events/rally-access-denied";
 import { requireContributor } from "@/lib/auth/authorization";
@@ -96,9 +99,10 @@ export default async function UploadPhotosPage({
         ) : null}
 
         <PhotoUploadForm
-          action={uploadPhotosAction}
           albumId={parsedAlbumId}
           cancelHref={`/rally-events/${rallyEventId}/albums/${parsedAlbumId}`}
+          createUploadPlanAction={createDirectPhotoUploadPlanAction}
+          finalizeUploadAction={finalizeDirectPhotoUploadAction}
           rallyEventId={rallyEventId}
         />
       </section>
