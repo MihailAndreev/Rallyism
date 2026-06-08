@@ -321,17 +321,15 @@ export default async function AlbumPage({
             ).toString()}`,
     };
   });
-  const viewerPhotos = mediaPage.items
-    .filter((item) => item.type === "photo")
-    .map((item) => ({
-      id: item.id,
-      title: item.title,
-      caption: item.caption,
-      thumbnailImageUrl: item.thumbnailImageUrl,
-      displayImageUrl: item.displayImageUrl,
-      originalImageUrl: item.originalImageUrl,
-      tags: canBrowseTags ? item.tags : [],
-    }));
+  const viewerPhotos = result.viewerPhotos.map((item) => ({
+    id: item.id,
+    title: item.title,
+    caption: item.caption,
+    thumbnailImageUrl: item.thumbnailImageUrl,
+    displayImageUrl: item.displayImageUrl,
+    originalImageUrl: item.originalImageUrl,
+    tags: canBrowseTags ? item.tags : [],
+  }));
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">

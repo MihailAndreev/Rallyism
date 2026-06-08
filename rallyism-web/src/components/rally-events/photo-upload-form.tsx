@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useFormStatus } from "react-dom";
+import { useState } from "react";
 
 type PhotoUploadFormProps = {
   action: (formData: FormData) => void | Promise<void>;
@@ -30,6 +31,12 @@ export function PhotoUploadForm({
   cancelHref,
   rallyEventId,
 }: PhotoUploadFormProps) {
+  const [fileCount, setFileCount] = useState(0);
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setFileCount(event.target.files?.length ?? 0);
+  };
+
   return (
     <form action={action} className="space-y-6">
       <input type="hidden" name="rallyEventId" value={rallyEventId} />
@@ -48,8 +55,14 @@ export function PhotoUploadForm({
           type="file"
           multiple
           accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+          onChange={handleFileChange}
           className="block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm file:mr-4 file:rounded-md file:border-0 file:bg-zinc-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-zinc-900 hover:file:bg-zinc-200 focus:border-rally-blue focus:outline-none focus:ring-2 focus:ring-rally-blue-soft"
         />
+        {fileCount > 0 && (
+          <p className="text-sm font-medium text-rally-blue">
+            {fileCount} {fileCount === 1 ? "file" : "files"} selected
+          </p>
+        )}
         <p className="text-sm leading-6 text-zinc-500">
           HEIC photos are rejected for now. Uploaded images are converted to WebP
           display and thumbnail files.

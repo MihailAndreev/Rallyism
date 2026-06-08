@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { formatDateForDisplay } from "@/services/rally-events";
 import type { RallyEventAlbum } from "@/services/rally-events";
 
 type AlbumFormProps = {
@@ -70,9 +71,10 @@ export function AlbumForm({
         <Field label="Album date">
           <input
             className={inputClass}
-            defaultValue={album?.albumDate ?? ""}
+            defaultValue={formatDateForDisplay(album?.albumDate)}
             name="albumDate"
-            type="date"
+            type="text"
+            placeholder="dd/mm/yyyy"
           />
         </Field>
 

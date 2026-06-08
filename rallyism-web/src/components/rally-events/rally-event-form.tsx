@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { formatDateForDisplay } from "@/services/rally-events";
 import type { RallyEventSummary } from "@/services/rally-events";
 
 type RallyEventFormProps = {
@@ -137,18 +138,20 @@ export function RallyEventForm({
         <Field label="Start date">
           <input
             className={inputClass}
-            defaultValue={event?.startDate ?? ""}
+            defaultValue={formatDateForDisplay(event?.startDate)}
             name="startDate"
-            type="date"
+            type="text"
+            placeholder="dd/mm/yyyy"
           />
         </Field>
 
         <Field label="End date">
           <input
             className={inputClass}
-            defaultValue={event?.endDate ?? ""}
+            defaultValue={formatDateForDisplay(event?.endDate)}
             name="endDate"
-            type="date"
+            type="text"
+            placeholder="dd/mm/yyyy"
           />
         </Field>
 

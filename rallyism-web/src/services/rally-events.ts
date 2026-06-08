@@ -276,6 +276,7 @@ export type AlbumMediaGalleryDetailsResult =
       event: RallyEventSummary;
       album: RallyEventAlbum;
       mediaPage: AlbumMediaPage;
+      viewerPhotos: AlbumMediaItem[];
     };
 
 export type RallyEventFormInput = {
@@ -650,13 +651,38 @@ export async function getTaggedPhotosPage(input: {
 }
 
 function isValidDateOnly(value: string) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+  // Accept dd/mm/yyyy format
+  if (!/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
     return false;
   }
 
-  const date = new Date(`${value}T00:00:00Z`);
+  const [day, month, year] = value.split("/").map(Number);
+  
+  // Validate month and day ranges
+  if (month < 1 || month > 12 || day < 1 || day > 31) {
+    return false;
+  }
 
-  return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value);
+  const date = new Date(year, month - 1, day);
+  
+  // Check if the date is valid (e.g., not Feb 30)
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+}
+
+function convertDateToIsoFormat(value: string): string {
+  // Convert dd/mm/yyyy to yyyy-mm-dd for storage
+  const [day, month, year] = value.split("/").map(num => num.padStart(2, "0"));
+  return `${year}-${month}-${day}`;
+}
+
+export function formatDateForDisplay(dateString: string | null | undefined): string {
+  // Convert yyyy-mm-dd to dd/mm/yyyy for display in forms
+  if (!dateString) {
+    return "";
+  }
+
+  const [year, month, day] = dateString.split("-");
+  return `${day}/${month}/${year}`;
 }
 
 function normalizeOptionalDate(value: string) {
@@ -667,10 +693,10 @@ function normalizeOptionalDate(value: string) {
   }
 
   if (!isValidDateOnly(trimmed)) {
-    throw new RallyEventValidationError("Enter valid rally dates.");
+    throw new RallyEventValidationError("Enter valid rally dates in dd/mm/yyyy format.");
   }
 
-  return trimmed;
+  return convertDateToIsoFormat(trimmed);
 }
 
 function parseChampionship(value: string): RallyEventChampionship {
@@ -1067,6 +1093,51 @@ async function getAlbumMediaPage(input: {
     hasPreviousPage: currentPage > 1,
     hasNextPage: currentPage < totalPages,
   };
+}
+
+async function getAlbumViewerPhotos(input: {
+  rallyEventId: number;
+  albumId: number;
+}): Promise<AlbumMediaItem[]> {
+  const items = await db
+    .select({
+      id: mediaItems.id,
+      albumId: mediaItems.albumId,
+      type: mediaItems.type,
+      title: mediaItems.title,
+      caption: mediaItems.caption,
+      thumbnailImageUrl: mediaItems.thumbnailImageUrl,
+      displayImageUrl: mediaItems.displayImageUrl,
+      originalImageUrl: mediaItems.originalImageUrl,
+      youtubeThumbnailUrl: mediaItems.youtubeThumbnailUrl,
+      youtubeUrl: mediaItems.youtubeUrl,
+      dateTaken: mediaItems.dateTaken,
+      location: mediaItems.location,
+      sortOrder: mediaItems.sortOrder,
+      createdById: mediaItems.createdById,
+      createdAt: mediaItems.createdAt,
+    })
+    .from(mediaItems)
+    .where(
+      and(
+        eq(mediaItems.rallyEventId, input.rallyEventId),
+        eq(mediaItems.albumId, input.albumId),
+        eq(mediaItems.type, "photo"),
+      ),
+    )
+    .orderBy(
+      asc(mediaItems.sortOrder),
+      asc(mediaItems.dateTaken),
+      asc(mediaItems.createdAt),
+    );
+  const tagsByMediaItem = await getTagsByMediaItemIds(
+    items.map((item) => item.id),
+  );
+
+  return items.map((item) => ({
+    ...item,
+    tags: tagsByMediaItem.get(item.id) ?? [],
+  }));
 }
 
 export async function getDashboardRallyEvents() {
@@ -2349,7 +2420,7 @@ export async function getAlbumMediaGalleryDetails(input: {
     return { status: "not-found" };
   }
 
-  const [eventCounts, albumCounts, mediaPage] = await Promise.all([
+  const [eventCounts, albumCounts, mediaPage, viewerPhotos] = await Promise.all([
     getRallyEventSummaryCounts(input.rallyEventId),
     getSingleAlbumMediaCounts(input.albumId),
     getAlbumMediaPage({
@@ -2358,6 +2429,10 @@ export async function getAlbumMediaGalleryDetails(input: {
       filter: input.filter,
       page: input.page,
       pageSize: input.pageSize,
+    }),
+    getAlbumViewerPhotos({
+      rallyEventId: input.rallyEventId,
+      albumId: input.albumId,
     }),
   ]);
 
@@ -2376,5 +2451,6 @@ export async function getAlbumMediaGalleryDetails(input: {
       ...albumCounts,
     },
     mediaPage,
+    viewerPhotos,
   };
 }
