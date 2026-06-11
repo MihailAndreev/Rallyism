@@ -53,7 +53,7 @@ function getErrorHref(
 }
 
 function getSafeAlbumReturnPath(formData: FormData, rallyEventId: number, albumId: number) {
-  const fallback = `/rally-events/${rallyEventId}/albums/${albumId}?filter=photos`;
+  const fallback = `/rally-events/${rallyEventId}/albums/${albumId}?filter=photos#media-grid`;
   const rawReturnTo = String(formData.get("returnTo") ?? "");
 
   if (
@@ -70,12 +70,13 @@ function getSafeAlbumReturnPath(formData: FormData, rallyEventId: number, albumI
 }
 
 function appendToastToHref(href: string, toast: "photo-deleted") {
-  const [pathname, query = ""] = href.split("?");
+  const [withoutHash, hash = ""] = href.split("#");
+  const [pathname, query = ""] = withoutHash.split("?");
   const params = new URLSearchParams(query);
 
   params.set("toast", toast);
 
-  return `${pathname}?${params.toString()}`;
+  return `${pathname}?${params.toString()}${hash ? `#${hash}` : ""}`;
 }
 
 export async function updatePhotoAction(formData: FormData) {

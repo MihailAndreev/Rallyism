@@ -45,7 +45,7 @@ function getErrorHref(
 }
 
 function getAlbumVideosHref(rallyEventId: number, albumId: number) {
-  return `/rally-events/${rallyEventId}/albums/${albumId}?filter=videos`;
+  return `/rally-events/${rallyEventId}/albums/${albumId}?filter=videos#media-grid`;
 }
 
 export async function updateVideoAction(formData: FormData) {

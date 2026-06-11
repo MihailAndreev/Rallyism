@@ -86,6 +86,10 @@ function getAlbumPageHref(input: {
   }`;
 }
 
+function getMediaGridHref(href: string) {
+  return `${href}#media-grid`;
+}
+
 function getUploadResultMessage(searchParams: Awaited<AlbumPageProps["searchParams"]>) {
   const status = searchParams?.uploadStatus;
 
@@ -281,12 +285,14 @@ export default async function AlbumPage({
   const canBrowseTags = canContribute(user);
   const uploadResultMessage = getUploadResultMessage(resolvedSearchParams);
   const bulkDeleteResultMessage = getBulkDeleteResultMessage(resolvedSearchParams);
-  const mediaPageHref = getAlbumPageHref({
-    rallyEventId,
-    albumId: parsedAlbumId,
-    filter: mediaPage.filter,
-    page: mediaPage.currentPage,
-  });
+  const mediaPageHref = getMediaGridHref(
+    getAlbumPageHref({
+      rallyEventId,
+      albumId: parsedAlbumId,
+      filter: mediaPage.filter,
+      page: mediaPage.currentPage,
+    }),
+  );
   const galleryItems: AlbumMediaGridItem[] = mediaPage.items.map((item) => {
     const canManage =
       item.type === "video"
@@ -444,7 +450,7 @@ export default async function AlbumPage({
         </div>
       ) : null}
 
-      <section className="space-y-5">
+      <section id="media" className="scroll-mt-6 space-y-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="text-2xl font-semibold tracking-normal text-zinc-950">
@@ -461,11 +467,13 @@ export default async function AlbumPage({
             {filters.map((option) => (
               <Link
                 key={option.value}
-                href={getAlbumPageHref({
-                  rallyEventId,
-                  albumId: parsedAlbumId,
-                  filter: option.value,
-                })}
+                href={getMediaGridHref(
+                  getAlbumPageHref({
+                    rallyEventId,
+                    albumId: parsedAlbumId,
+                    filter: option.value,
+                  }),
+                )}
                 className={`flex-1 cursor-pointer rounded px-3 py-1.5 text-center text-sm font-semibold transition sm:flex-none ${
                   mediaPage.filter === option.value
                     ? "bg-rally-blue text-white"
@@ -488,13 +496,15 @@ export default async function AlbumPage({
             </p>
           </div>
         ) : mediaPage.items.length > 0 ? (
-          <AlbumMediaGrid
-            albumId={parsedAlbumId}
-            bulkDeletePhotosAction={bulkDeletePhotosAction}
-            bulkDeleteVideosAction={bulkDeleteVideosAction}
-            items={galleryItems}
-            rallyEventId={rallyEventId}
-          />
+          <div id="media-grid" className="scroll-mt-6">
+            <AlbumMediaGrid
+              albumId={parsedAlbumId}
+              bulkDeletePhotosAction={bulkDeletePhotosAction}
+              bulkDeleteVideosAction={bulkDeleteVideosAction}
+              items={galleryItems}
+              rallyEventId={rallyEventId}
+            />
+          </div>
         ) : (
           <div className="rounded-lg border border-dashed border-zinc-300 bg-white px-5 py-10 text-center">
             <h2 className="text-lg font-semibold text-zinc-950">

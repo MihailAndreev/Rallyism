@@ -27,7 +27,7 @@ function getSafeAlbumReturnPath(input: {
   rallyEventId: number;
   value: string | undefined;
 }) {
-  const fallback = `/rally-events/${input.rallyEventId}/albums/${input.albumId}?filter=photos`;
+  const fallback = `/rally-events/${input.rallyEventId}/albums/${input.albumId}?filter=photos#media-grid`;
 
   if (!input.value || !input.value.startsWith("/") || input.value.startsWith("//")) {
     return fallback;
@@ -80,7 +80,7 @@ export default async function EditPhotoPage({
   if (result.status === "access-denied") {
     return (
       <RallyAccessDenied
-        backHref={`/rally-events/${rallyEventId}/albums/${parsedAlbumId}?filter=photos`}
+        backHref={`/rally-events/${rallyEventId}/albums/${parsedAlbumId}?filter=photos#media-grid`}
         backLabel="Back to album photos"
       />
     );

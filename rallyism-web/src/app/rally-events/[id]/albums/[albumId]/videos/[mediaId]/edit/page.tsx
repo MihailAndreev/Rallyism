@@ -72,7 +72,7 @@ export default async function EditVideoPage({
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
       <Link
-        href={`/rally-events/${rallyEventId}/albums/${parsedAlbumId}?filter=videos`}
+        href={`/rally-events/${rallyEventId}/albums/${parsedAlbumId}?filter=videos#media-grid`}
         className="inline-flex text-sm font-semibold text-rally-blue hover:text-rally-blue-hover"
       >
         Back to album videos
@@ -94,7 +94,7 @@ export default async function EditVideoPage({
         <VideoForm
           action={updateVideoAction}
           albumId={parsedAlbumId}
-          cancelHref={`/rally-events/${rallyEventId}/albums/${parsedAlbumId}?filter=videos`}
+          cancelHref={`/rally-events/${rallyEventId}/albums/${parsedAlbumId}?filter=videos#media-grid`}
           deleteAction={deleteVideoAction}
           error={resolvedSearchParams?.error}
           rallyEventId={rallyEventId}
