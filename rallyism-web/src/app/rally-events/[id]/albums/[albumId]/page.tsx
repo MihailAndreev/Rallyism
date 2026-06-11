@@ -284,6 +284,7 @@ export default async function AlbumPage({
   const { album, event, mediaPage } = result;
   const canManageEvent = userCanManageEvent(event, user);
   const canBrowseTags = canContribute(user);
+  const hasCover = Boolean(album.coverImageUrl);
   const uploadResultMessage = getUploadResultMessage(resolvedSearchParams);
   const bulkDeleteResultMessage = getBulkDeleteResultMessage(resolvedSearchParams);
   const mediaPageHref = getMediaGridHref(
@@ -347,7 +348,7 @@ export default async function AlbumPage({
       </Link>
 
       <section className="relative overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm">
-        {!album.coverImageUrl ? (
+        {!hasCover ? (
           <Image
             src="/images/rallyism-logo.png"
             alt=""
@@ -357,19 +358,32 @@ export default async function AlbumPage({
             className="pointer-events-none absolute left-1/2 top-1/2 hidden h-64 w-auto -translate-x-1/2 -translate-y-1/2 opacity-[0.079] lg:block"
           />
         ) : null}
-        {album.coverImageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={album.coverImageUrl}
-            alt={`${album.title} cover`}
-            className="h-56 w-full object-cover sm:h-72"
-          />
+        {hasCover ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={album.coverImageUrl ?? ""}
+              alt={`${album.title} cover`}
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.96)_0%,rgba(255,255,255,0.88)_28%,rgba(255,255,255,0.54)_52%,rgba(255,255,255,0.12)_78%,rgba(255,255,255,0.06)_100%)]" />
+          </>
         ) : null}
-        <div className="relative space-y-5 p-6 sm:p-8">
+        <div
+          className={`relative space-y-5 p-6 sm:p-8 ${
+            hasCover ? "min-h-[320px] sm:min-h-[360px] lg:min-h-[400px]" : ""
+          }`}
+        >
           <div>
             <p className="text-sm font-semibold uppercase text-rally-blue">Album</p>
             {canManageEvent && album.effectiveVisibility === "private" ? (
-              <span className="mt-3 inline-flex rounded-md border border-zinc-300 bg-zinc-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-zinc-600">
+              <span
+                className={`mt-3 inline-flex rounded-md px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${
+                  hasCover
+                    ? "border border-zinc-300/80 bg-white/85 text-zinc-700 backdrop-blur-[2px]"
+                    : "border border-zinc-300 bg-zinc-100 text-zinc-600"
+                }`}
+              >
                 Private
               </span>
             ) : null}
@@ -393,7 +407,11 @@ export default async function AlbumPage({
             ].map((stat) => (
               <span
                 key={stat.label}
-                className="rounded-md border border-rally-orange-border bg-white px-2.5 py-1 text-xs font-medium text-zinc-700"
+                className={`rounded-md border px-2.5 py-1 text-xs font-medium ${
+                  hasCover
+                    ? "border-rally-orange-border bg-white/88 text-zinc-800 backdrop-blur-[2px]"
+                    : "border-rally-orange-border bg-white text-zinc-700"
+                }`}
               >
                 {stat.label}{" "}
                 <span className="font-bold text-zinc-900">{stat.value}</span>
