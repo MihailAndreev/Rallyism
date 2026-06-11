@@ -206,6 +206,7 @@ export type TaggedPhotoItem = {
   displayImageUrl: string | null;
   originalImageUrl: string | null;
   eventTitle: string;
+  rallyName: string;
   albumTitle: string;
   createdAt: Date;
 };
@@ -722,6 +723,7 @@ export async function getTaggedPhotosPage(input: {
       displayImageUrl: mediaItems.displayImageUrl,
       originalImageUrl: mediaItems.originalImageUrl,
       eventTitle: rallyEvents.title,
+      rallyName: rallyEvents.rallyName,
       albumTitle: albums.title,
       createdAt: mediaItems.createdAt,
     })
