@@ -1,7 +1,7 @@
 import { jwtVerify } from "jose";
 import { NextRequest, NextResponse } from "next/server";
 
-const publicRoutes = new Set(["/", "/login", "/register"]);
+const publicRoutes = new Set(["/", "/about", "/login", "/register"]);
 const sessionCookieName = "rallyism_session";
 
 function getJwtSecret() {
