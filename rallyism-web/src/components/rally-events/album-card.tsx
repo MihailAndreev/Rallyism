@@ -49,7 +49,7 @@ export function AlbumCard({ album }: { album: RallyEventAlbum }) {
               width={220}
               height={239}
               aria-hidden="true"
-              className="pointer-events-none absolute left-1/2 top-1/2 h-44 w-auto -translate-x-1/2 -translate-y-1/2 opacity-[0.16]"
+              className="pointer-events-none absolute left-1/2 top-1/2 h-auto w-[46%] max-w-72 -translate-x-1/2 -translate-y-1/2 opacity-[0.23]"
             />
           </div>
         )}
@@ -94,7 +94,7 @@ export function EmptyAlbumCard() {
           width={220}
           height={239}
           aria-hidden="true"
-          className="pointer-events-none absolute left-1/2 top-1/2 h-44 w-auto -translate-x-1/2 -translate-y-1/2 opacity-[0.14]"
+          className="pointer-events-none absolute left-1/2 top-1/2 h-auto w-[46%] max-w-72 -translate-x-1/2 -translate-y-1/2 opacity-[0.202]"
         />
       </div>
       <div className="space-y-2 p-5">

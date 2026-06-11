@@ -31,7 +31,7 @@ export default async function DashboardPage() {
           height={282}
           priority
           aria-hidden="true"
-          className="pointer-events-none absolute left-1/2 top-1/2 hidden h-64 w-auto -translate-x-1/2 -translate-y-1/2 opacity-[0.055] lg:block"
+          className="pointer-events-none absolute left-1/2 top-1/2 hidden h-64 w-auto -translate-x-1/2 -translate-y-1/2 opacity-[0.079] lg:block"
         />
         <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
           <div className="min-w-0">

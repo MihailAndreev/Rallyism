@@ -32,7 +32,7 @@ export function RallyEventHeader({
         height={239}
         priority
         aria-hidden="true"
-        className="pointer-events-none absolute right-8 top-1/2 hidden h-56 w-auto -translate-y-1/2 opacity-[0.055] sm:block"
+        className="pointer-events-none absolute right-8 top-1/2 hidden h-56 w-auto -translate-y-1/2 opacity-[0.079] sm:block"
       />
       <div className="relative space-y-4">
         <Link

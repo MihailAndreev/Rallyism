@@ -64,7 +64,7 @@ export default async function TagsPage({ searchParams }: TagsPageProps) {
           height={282}
           priority
           aria-hidden="true"
-          className="pointer-events-none absolute left-1/2 top-1/2 hidden h-56 w-auto -translate-x-1/2 -translate-y-1/2 opacity-[0.055] lg:block"
+          className="pointer-events-none absolute left-1/2 top-1/2 hidden h-56 w-auto -translate-x-1/2 -translate-y-1/2 opacity-[0.079] lg:block"
         />
         <div className="relative min-w-0">
           <span className="inline-flex rounded-md border border-rally-orange-border bg-white px-2.5 py-1 text-xs font-semibold uppercase text-rally-blue">
