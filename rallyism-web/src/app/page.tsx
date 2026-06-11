@@ -81,19 +81,16 @@ export default async function Home({ searchParams }: HomeProps) {
     <div className="mx-auto w-full max-w-6xl space-y-10 px-4 py-10 sm:px-6 lg:px-8">
       <section className="space-y-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm font-semibold uppercase text-rally-blue">
-              Rallyism
-            </p>
-            <h1 className="mt-3 text-4xl font-semibold tracking-normal text-zinc-950 sm:text-5xl">
-              Public rally memories
+          <div className="min-w-0 flex-1">
+            <h1 className="text-4xl font-semibold tracking-normal text-zinc-950 sm:text-5xl">
+              Rallyism: more than a memory, more than a rally.
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-600 sm:text-lg">
-              Browse published rally events, albums, photos and YouTube video
-              links from the Rallyism archive.
+              Browse published rally events, albums, photos and videos from
+              rally journeys across special stages and service parks.
             </p>
           </div>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-3 sm:ml-auto sm:shrink-0">
             {user ? (
               <Link
                 href="/dashboard"
@@ -105,13 +102,13 @@ export default async function Home({ searchParams }: HomeProps) {
               <>
                 <Link
                   href="/login"
-                  className="inline-flex h-11 items-center justify-center rounded-md bg-rally-blue px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-rally-blue-hover"
+                  className="inline-flex h-11 w-28 items-center justify-center rounded-md bg-rally-blue px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-rally-blue-hover"
                 >
                   Login
                 </Link>
                 <Link
                   href="/register"
-                  className="inline-flex h-11 items-center justify-center rounded-md border border-zinc-300 bg-white px-5 text-sm font-semibold text-zinc-900 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-100"
+                  className="inline-flex h-11 w-28 items-center justify-center rounded-md border border-zinc-300 bg-white px-5 text-sm font-semibold text-zinc-900 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-100"
                 >
                   Register
                 </Link>
