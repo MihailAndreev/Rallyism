@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -345,7 +346,17 @@ export default async function AlbumPage({
         Back to {event.rallyName}
       </Link>
 
-      <section className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm">
+      <section className="relative overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm">
+        {!album.coverImageUrl ? (
+          <Image
+            src="/images/rallyism-logo.png"
+            alt=""
+            width={260}
+            height={282}
+            aria-hidden="true"
+            className="pointer-events-none absolute left-1/2 top-1/2 hidden h-64 w-auto -translate-x-1/2 -translate-y-1/2 opacity-[0.079] lg:block"
+          />
+        ) : null}
         {album.coverImageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -354,7 +365,7 @@ export default async function AlbumPage({
             className="h-56 w-full object-cover sm:h-72"
           />
         ) : null}
-        <div className="space-y-5 p-6 sm:p-8">
+        <div className="relative space-y-5 p-6 sm:p-8">
           <div>
             <p className="text-sm font-semibold uppercase text-rally-blue">Album</p>
             {canManageEvent && album.effectiveVisibility === "private" ? (
