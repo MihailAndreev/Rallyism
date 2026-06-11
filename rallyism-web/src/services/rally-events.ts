@@ -269,6 +269,14 @@ export type CreatableAlbumEvent = Pick<
   | "visibility"
 >;
 
+export type CreatableAlbumEventsPage = {
+  events: CreatableAlbumEvent[];
+  visibility: DashboardRallyEventVisibilityFilter;
+  championship: DashboardRallyEventChampionshipFilter;
+  year: number | null;
+  search: string;
+};
+
 export type DashboardRallyEventVisibilityFilter =
   | "all"
   | RallyEventVisibility;
@@ -2038,6 +2046,124 @@ export async function getCreatableAlbumEvents(
   }
 
   return await query;
+}
+
+function getCreatableAlbumEventsWhereClause(input: {
+  currentUser: AuthUser;
+  visibility: DashboardRallyEventVisibilityFilter;
+  championship: DashboardRallyEventChampionshipFilter;
+  year: number | null;
+  search: string;
+}) {
+  const clauses: SQL[] = [];
+
+  if (!isAdmin(input.currentUser)) {
+    clauses.push(
+      or(
+        eq(rallyEvents.visibility, "public"),
+        eq(rallyEvents.createdById, input.currentUser.id),
+      )!,
+    );
+  }
+
+  if (input.visibility !== "all") {
+    clauses.push(eq(rallyEvents.visibility, input.visibility));
+  }
+
+  if (input.championship !== "all") {
+    clauses.push(eq(rallyEvents.championship, input.championship));
+  }
+
+  if (input.year) {
+    clauses.push(eq(rallyEvents.seasonYear, input.year));
+  }
+
+  if (input.search) {
+    const pattern = `%${input.search}%`;
+    const searchClause = or(
+      ilike(rallyEvents.title, pattern),
+      ilike(rallyEvents.rallyName, pattern),
+      ilike(rallyEvents.country, pattern),
+      ilike(rallyEvents.region, pattern),
+    );
+
+    if (searchClause) {
+      clauses.push(searchClause);
+    }
+  }
+
+  return clauses.length > 0 ? and(...clauses) : undefined;
+}
+
+export async function getCreatableAlbumEventsPage(input: {
+  currentUser: AuthUser;
+  visibility?: DashboardRallyEventVisibilityFilter;
+  championship?: DashboardRallyEventChampionshipFilter;
+  year?: number | null;
+  search?: string;
+}): Promise<CreatableAlbumEventsPage> {
+  const visibility = input.visibility ?? "all";
+  const championship = input.championship ?? "all";
+  const year = input.year ?? null;
+  const search = normalizeTagName(input.search ?? "").slice(0, 120);
+  const whereClause = getCreatableAlbumEventsWhereClause({
+    currentUser: input.currentUser,
+    visibility,
+    championship,
+    year,
+    search,
+  });
+
+  const query = db
+    .select({
+      id: rallyEvents.id,
+      title: rallyEvents.title,
+      rallyName: rallyEvents.rallyName,
+      seasonYear: rallyEvents.seasonYear,
+      country: rallyEvents.country,
+      region: rallyEvents.region,
+      startDate: rallyEvents.startDate,
+      endDate: rallyEvents.endDate,
+      visibility: rallyEvents.visibility,
+    })
+    .from(rallyEvents)
+    .orderBy(desc(rallyEvents.startDate), desc(rallyEvents.createdAt))
+    .$dynamic();
+
+  if (whereClause) {
+    query.where(whereClause);
+  }
+
+  return {
+    events: await query,
+    visibility,
+    championship,
+    year,
+    search,
+  };
+}
+
+export async function getCreatableAlbumEventYearOptions(currentUser: AuthUser) {
+  const query = db
+    .select({
+      year: rallyEvents.seasonYear,
+    })
+    .from(rallyEvents)
+    .orderBy(desc(rallyEvents.seasonYear))
+    .$dynamic();
+
+  if (!isAdmin(currentUser)) {
+    query.where(
+      or(
+        eq(rallyEvents.visibility, "public"),
+        eq(rallyEvents.createdById, currentUser.id),
+      ),
+    );
+  }
+
+  const rows = await query;
+
+  return Array.from(new Set(rows.map((row) => row.year)));
 }
 
 export async function updateRallyEvent(input: {

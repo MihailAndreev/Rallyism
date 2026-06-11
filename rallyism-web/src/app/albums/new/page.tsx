@@ -1,18 +1,78 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { DashboardRallyEventFilters } from "@/components/rally-events/dashboard-rally-event-filters";
 import { formatDateRange } from "@/components/rally-events/rally-event-format";
 import { requireContributor } from "@/lib/auth/authorization";
-import { getCreatableAlbumEvents } from "@/services/rally-events";
+import {
+  getCreatableAlbumEventsPage,
+  getCreatableAlbumEventYearOptions,
+  type DashboardRallyEventChampionshipFilter,
+  type DashboardRallyEventVisibilityFilter,
+} from "@/services/rally-events";
 
-export default async function ChooseAlbumEventPage() {
+type ChooseAlbumEventPageProps = {
+  searchParams?: Promise<{
+    championship?: string;
+    q?: string;
+    visibility?: string;
+    year?: string;
+  }>;
+};
+
+function parseVisibility(value: string | undefined): DashboardRallyEventVisibilityFilter {
+  if (value === "public" || value === "private" || value === "unlisted") {
+    return value;
+  }
+
+  return "all";
+}
+
+function parseChampionship(
+  value: string | undefined,
+): DashboardRallyEventChampionshipFilter {
+  if (
+    value === "WRC" ||
+    value === "ERC" ||
+    value === "national" ||
+    value === "other"
+  ) {
+    return value;
+  }
+
+  return "all";
+}
+
+function parseYear(value: string | undefined) {
+  const year = Number(value);
+
+  return Number.isInteger(year) && year >= 1950 && year <= 2100 ? year : null;
+}
+
+export default async function ChooseAlbumEventPage({
+  searchParams,
+}: ChooseAlbumEventPageProps) {
+  const resolvedSearchParams = await searchParams;
   const user = await requireContributor("/albums/new");
 
   if (!user) {
     redirect("/pending-approval");
   }
 
-  const events = await getCreatableAlbumEvents(user);
+  const visibility = parseVisibility(resolvedSearchParams?.visibility);
+  const championship = parseChampionship(resolvedSearchParams?.championship);
+  const year = parseYear(resolvedSearchParams?.year);
+  const search = resolvedSearchParams?.q?.trim() ?? "";
+  const [eventsPage, yearOptions] = await Promise.all([
+    getCreatableAlbumEventsPage({
+      currentUser: user,
+      visibility,
+      championship,
+      year,
+      search,
+    }),
+    getCreatableAlbumEventYearOptions(user),
+  ]);
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
@@ -33,9 +93,18 @@ export default async function ChooseAlbumEventPage() {
         </p>
       </section>
 
-      {events.length > 0 ? (
+      <DashboardRallyEventFilters
+        championship={eventsPage.championship}
+        clearHref="/albums/new"
+        search={eventsPage.search}
+        visibility={eventsPage.visibility}
+        year={eventsPage.year}
+        yearOptions={yearOptions}
+      />
+
+      {eventsPage.events.length > 0 ? (
         <section className="grid gap-4">
-          {events.map((event) => (
+          {eventsPage.events.map((event) => (
             <Link
               key={event.id}
               href={`/rally-events/${event.id}/albums/new`}
@@ -74,10 +143,10 @@ export default async function ChooseAlbumEventPage() {
       ) : (
         <section className="rounded-lg border border-dashed border-zinc-300 bg-white px-5 py-10 text-center shadow-sm">
           <h2 className="text-lg font-semibold text-zinc-950">
-            No events available for album creation.
+            No events match these filters.
           </h2>
           <p className="mt-2 text-sm leading-6 text-zinc-600">
-            Public rally events will appear here, along with any events you own.
+            Try widening the search or clearing one of the active filters.
           </p>
         </section>
       )}

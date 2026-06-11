@@ -32,6 +32,7 @@ const championshipFilters: {
 
 type DashboardRallyEventFiltersProps = {
   championship: DashboardRallyEventChampionshipFilter;
+  clearHref?: string;
   search: string;
   visibility: DashboardRallyEventVisibilityFilter;
   year: number | null;
@@ -40,6 +41,7 @@ type DashboardRallyEventFiltersProps = {
 
 export function DashboardRallyEventFilters({
   championship,
+  clearHref = "/dashboard",
   search,
   visibility,
   year,
@@ -99,7 +101,7 @@ export function DashboardRallyEventFilters({
 
   return (
     <form
-      action="/dashboard"
+      action={clearHref}
       onSubmit={(event) => {
         event.preventDefault();
         replaceFilters({ search: searchValue });
@@ -178,7 +180,7 @@ export function DashboardRallyEventFilters({
         </select>
       </label>
       <Link
-        href="/dashboard"
+        href={clearHref}
         className="inline-flex h-10 items-center justify-center rounded-md border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-900 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-100"
       >
         Clear
