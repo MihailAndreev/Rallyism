@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { DateTextInput } from "@/components/ui/date-text-input";
 import { formatDateForDisplay } from "@/services/rally-events";
 import type { RallyEventSummary } from "@/services/rally-events";
 
@@ -31,13 +32,22 @@ const visibilities = [
 function Field({
   children,
   label,
+  required = false,
 }: {
   children: ReactNode;
   label: string;
+  required?: boolean;
 }) {
   return (
     <label className="block space-y-2">
-      <span className="text-sm font-semibold text-zinc-900">{label}</span>
+      <span className="text-sm font-semibold text-zinc-900">
+        {label}
+        {required ? (
+          <span className="ml-1 text-rally-orange" aria-hidden="true">
+            *
+          </span>
+        ) : null}
+      </span>
       {children}
     </label>
   );
@@ -70,7 +80,7 @@ export function RallyEventForm({
         ) : null}
 
         <div className="grid gap-5 sm:grid-cols-2">
-        <Field label="Title">
+        <Field label="Title" required>
           <input
             className={inputClass}
             defaultValue={event?.title}
@@ -80,7 +90,7 @@ export function RallyEventForm({
           />
         </Field>
 
-        <Field label="Rally name">
+        <Field label="Rally name" required>
           <input
             className={inputClass}
             defaultValue={event?.rallyName}
@@ -104,7 +114,7 @@ export function RallyEventForm({
           </select>
         </Field>
 
-        <Field label="Season year">
+        <Field label="Season year" required>
           <input
             className={inputClass}
             defaultValue={event?.seasonYear ?? new Date().getFullYear()}
@@ -116,7 +126,7 @@ export function RallyEventForm({
           />
         </Field>
 
-        <Field label="Country">
+        <Field label="Country" required>
           <input
             className={inputClass}
             defaultValue={event?.country}
@@ -136,22 +146,18 @@ export function RallyEventForm({
         </Field>
 
         <Field label="Start date">
-          <input
+          <DateTextInput
             className={inputClass}
             defaultValue={formatDateForDisplay(event?.startDate)}
             name="startDate"
-            type="text"
-            placeholder="dd/mm/yyyy"
           />
         </Field>
 
         <Field label="End date">
-          <input
+          <DateTextInput
             className={inputClass}
             defaultValue={formatDateForDisplay(event?.endDate)}
             name="endDate"
-            type="text"
-            placeholder="dd/mm/yyyy"
           />
         </Field>
 

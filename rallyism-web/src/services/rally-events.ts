@@ -2316,11 +2316,14 @@ export async function getEditableAlbum(input: {
     return { status: "access-denied" };
   }
 
-  const albumCounts = await getSingleAlbumMediaCounts(input.albumId);
+  const [albumCounts, eventCounts] = await Promise.all([
+    getSingleAlbumMediaCounts(input.albumId),
+    getRallyEventSummaryCounts(input.rallyEventId),
+  ]);
 
   return {
     status: "allowed",
-    event: eventAccess.event,
+    event: toRallyEventSummary(eventAccess.event, eventCounts, null),
     album: toRallyEventAlbum(
       album,
       albumCounts,

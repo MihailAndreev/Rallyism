@@ -10,6 +10,7 @@ import type {
   RallyEventAlbum,
   RallyEventVisibility,
 } from "@/services/rally-events";
+import { DateTextInput } from "@/components/ui/date-text-input";
 
 type AlbumFormProps = {
   action: (formData: FormData) => void | Promise<void>;
@@ -26,13 +27,22 @@ type AlbumFormProps = {
 function Field({
   children,
   label,
+  required = false,
 }: {
   children: ReactNode;
   label: string;
+  required?: boolean;
 }) {
   return (
     <label className="block space-y-2">
-      <span className="text-sm font-semibold text-zinc-900">{label}</span>
+      <span className="text-sm font-semibold text-zinc-900">
+        {label}
+        {required ? (
+          <span className="ml-1 text-rally-orange" aria-hidden="true">
+            *
+          </span>
+        ) : null}
+      </span>
       {children}
     </label>
   );
@@ -71,7 +81,7 @@ export function AlbumForm({
         ) : null}
 
         <div className="grid gap-5 sm:grid-cols-2">
-        <Field label="Title">
+        <Field label="Title" required>
           <input
             className={inputClass}
             defaultValue={album?.title}
@@ -82,12 +92,10 @@ export function AlbumForm({
         </Field>
 
         <Field label="Album date">
-          <input
+          <DateTextInput
             className={inputClass}
             defaultValue={formatDateForDisplay(album?.albumDate)}
             name="albumDate"
-            type="text"
-            placeholder="dd/mm/yyyy"
           />
         </Field>
 
