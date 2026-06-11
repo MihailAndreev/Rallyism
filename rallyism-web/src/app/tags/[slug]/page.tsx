@@ -119,7 +119,7 @@ export default async function TagDetailsPage({
                   </div>
                   <div className="space-y-1 px-2 py-2">
                     <p className="truncate text-xs font-semibold text-zinc-900">
-                      {item.eventTitle}
+                      {item.rallyName}
                     </p>
                     <p className="truncate text-xs text-zinc-500">
                       {item.albumTitle}
