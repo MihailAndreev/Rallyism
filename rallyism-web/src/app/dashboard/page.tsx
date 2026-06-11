@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 
 import { EmptyDashboardSection } from "@/components/rally-events/empty-dashboard-section";
 import { RallyEventCard } from "@/components/rally-events/rally-event-card";
@@ -22,13 +23,22 @@ export default async function DashboardPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-10 px-4 py-10 sm:px-6 lg:px-8">
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm font-semibold uppercase text-rally-blue">
+      <section className="relative overflow-hidden rounded-lg border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
+        <Image
+          src="/images/rallyism-logo.png"
+          alt=""
+          width={260}
+          height={282}
+          priority
+          aria-hidden="true"
+          className="pointer-events-none absolute left-1/2 top-1/2 hidden h-64 w-auto -translate-x-1/2 -translate-y-1/2 opacity-[0.055] lg:block"
+        />
+        <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+          <div className="min-w-0">
+            <span className="inline-flex rounded-md border border-rally-orange-border bg-white px-2.5 py-1 text-xs font-semibold uppercase text-rally-blue">
               Dashboard
-            </p>
-            <h1 className="mt-3 text-4xl font-semibold tracking-normal text-zinc-950">
+            </span>
+            <h1 className="mt-5 text-4xl font-semibold tracking-normal text-zinc-950">
               Welcome to Rallyism
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-600 sm:text-lg">
@@ -36,10 +46,8 @@ export default async function DashboardPage() {
               next step.
             </p>
           </div>
-          <div className="flex flex-col gap-3 sm:items-end">
-            <p className="text-sm text-zinc-500">
-              Signed in as {user.name || user.email}
-            </p>
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
             <Link
               href="/rally-events/new"
               className="inline-flex h-10 items-center justify-center rounded-md bg-rally-blue px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-rally-blue-hover"

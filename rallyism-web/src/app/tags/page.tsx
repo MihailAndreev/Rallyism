@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { redirect } from "next/navigation";
 
 import { requireContributor } from "@/lib/auth/authorization";
@@ -27,19 +28,32 @@ export default async function TagsPage({ searchParams }: TagsPageProps) {
     <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
       <Link
         href="/dashboard"
-        className="inline-flex text-sm font-semibold text-rally-blue hover:text-rally-blue-hover"
+        className="inline-flex h-10 items-center justify-center rounded-md bg-rally-blue px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-rally-blue-hover"
       >
-        Back to dashboard
+        Back to Dashboard
       </Link>
 
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
-        <p className="text-sm font-semibold uppercase text-rally-blue">Tags</p>
-        <h1 className="mt-3 text-4xl font-semibold tracking-normal text-zinc-950">
-          Browse photo tags
-        </h1>
-        <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-600 sm:text-base">
-          Find private rally memories by driver, team, place or moment.
-        </p>
+      <section className="relative overflow-hidden rounded-lg border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
+        <Image
+          src="/images/rallyism-logo.png"
+          alt=""
+          width={260}
+          height={282}
+          priority
+          aria-hidden="true"
+          className="pointer-events-none absolute left-1/2 top-1/2 hidden h-56 w-auto -translate-x-1/2 -translate-y-1/2 opacity-[0.055] lg:block"
+        />
+        <div className="relative min-w-0">
+          <span className="inline-flex rounded-md border border-rally-orange-border bg-white px-2.5 py-1 text-xs font-semibold uppercase text-rally-blue">
+            Tags
+          </span>
+          <h1 className="mt-5 text-4xl font-semibold tracking-normal text-zinc-950">
+            Browse photo tags
+          </h1>
+          <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-600 sm:text-base">
+            Find private rally memories by driver, team, place or moment.
+          </p>
+        </div>
       </section>
 
       <section className="space-y-5">

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 import { formatDate } from "@/components/rally-events/rally-event-format";
 import type { RallyEventAlbum } from "@/services/rally-events";
@@ -41,10 +42,15 @@ export function AlbumCard({ album }: { album: RallyEventAlbum }) {
             className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full items-center justify-center bg-zinc-100 px-5 text-center">
-            <span className="text-sm font-semibold text-zinc-500">
-              {album.title}
-            </span>
+          <div className="relative h-full bg-zinc-50">
+            <Image
+              src="/images/rallyism-logo.png"
+              alt=""
+              width={220}
+              height={239}
+              aria-hidden="true"
+              className="pointer-events-none absolute left-1/2 top-1/2 h-44 w-auto -translate-x-1/2 -translate-y-1/2 opacity-[0.16]"
+            />
           </div>
         )}
         <span className="absolute bottom-3 left-3 rounded-md bg-white/90 px-2.5 py-1 text-xs font-semibold text-zinc-700 shadow-sm">
@@ -81,8 +87,15 @@ export function AlbumCard({ album }: { album: RallyEventAlbum }) {
 export function EmptyAlbumCard() {
   return (
     <div className="overflow-hidden rounded-lg border border-dashed border-zinc-300 bg-white shadow-sm">
-      <div className="flex aspect-[16/10] items-center justify-center bg-zinc-50 px-5 text-center">
-        <span className="text-sm font-semibold text-zinc-500">No albums yet</span>
+      <div className="relative aspect-[16/10] bg-zinc-50">
+        <Image
+          src="/images/rallyism-logo.png"
+          alt=""
+          width={220}
+          height={239}
+          aria-hidden="true"
+          className="pointer-events-none absolute left-1/2 top-1/2 h-44 w-auto -translate-x-1/2 -translate-y-1/2 opacity-[0.14]"
+        />
       </div>
       <div className="space-y-2 p-5">
         <h3 className="text-xl font-semibold tracking-normal text-zinc-950">

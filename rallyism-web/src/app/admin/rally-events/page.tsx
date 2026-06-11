@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 import {
   formatChampionship,
@@ -170,19 +171,19 @@ function AdminLinks() {
     <div className="flex flex-wrap items-center gap-3">
       <Link
         href="/dashboard"
-        className="inline-flex text-sm font-semibold text-rally-blue hover:text-rally-blue-hover"
+        className="inline-flex h-10 items-center justify-center rounded-md bg-rally-blue px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-rally-blue-hover"
       >
         Back to Dashboard
       </Link>
       <Link
         href="/admin/users"
-        className="inline-flex text-sm font-semibold text-zinc-600 hover:text-zinc-950"
+        className="inline-flex h-10 items-center justify-center rounded-md border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-900 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-100"
       >
         User approvals
       </Link>
       <Link
         href="/admin/rally-events"
-        className="inline-flex text-sm font-semibold text-zinc-950"
+        className="inline-flex h-10 items-center justify-center rounded-md border border-rally-orange-border bg-rally-orange-soft px-4 text-sm font-semibold text-zinc-950 shadow-sm"
       >
         Rally events
       </Link>
@@ -249,23 +250,29 @@ export default async function AdminRallyEventsPage({
     <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
       <AdminLinks />
 
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm font-semibold uppercase text-rally-blue">
+      <section className="relative overflow-hidden rounded-lg border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
+        <Image
+          src="/images/rallyism-logo.png"
+          alt=""
+          width={260}
+          height={282}
+          priority
+          aria-hidden="true"
+          className="pointer-events-none absolute left-1/2 top-1/2 hidden h-56 w-auto -translate-x-1/2 -translate-y-1/2 opacity-[0.055] lg:block"
+        />
+        <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1fr)_260px] lg:items-start">
+          <div className="min-w-0">
+            <span className="inline-flex rounded-md border border-rally-orange-border bg-white px-2.5 py-1 text-xs font-semibold uppercase text-rally-blue">
               Admin
-            </p>
-            <h1 className="mt-3 text-4xl font-semibold tracking-normal text-zinc-950">
+            </span>
+            <h1 className="mt-5 text-4xl font-semibold tracking-normal text-zinc-950">
               Rally event content
             </h1>
             <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-600 sm:text-base">
               Review rally events, visibility, ownership and content counts.
             </p>
           </div>
-          <div className="flex flex-col gap-3 sm:items-end">
-            <p className="text-sm text-zinc-500">
-              Signed in as {admin.name || admin.email}
-            </p>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
             <Link
               href="/rally-events/new"
               className="inline-flex h-10 items-center justify-center rounded-md bg-rally-blue px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-rally-blue-hover"

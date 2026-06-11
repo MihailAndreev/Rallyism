@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 import { formatDateRange } from "@/components/rally-events/rally-event-format";
 import type { RallyEventSummary } from "@/services/rally-events";
@@ -23,8 +24,17 @@ export function RallyEventHeader({
   ].filter(Boolean);
 
   return (
-    <section className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
-      <div className="space-y-4">
+    <section className="relative overflow-hidden rounded-lg border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+      <Image
+        src="/images/rallyism-logo.png"
+        alt=""
+        width={220}
+        height={239}
+        priority
+        aria-hidden="true"
+        className="pointer-events-none absolute right-8 top-1/2 hidden h-56 w-auto -translate-y-1/2 opacity-[0.055] sm:block"
+      />
+      <div className="relative space-y-4">
         <Link
           href={backHref}
           className="inline-flex h-10 items-center justify-center rounded-md bg-rally-blue px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-rally-blue-hover"
