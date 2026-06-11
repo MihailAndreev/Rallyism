@@ -10,6 +10,7 @@ import { ShareRallyLinkButton } from "@/components/rally-events/share-rally-link
 import { getCurrentUser } from "@/lib/auth/session";
 import {
   getRallyEventDetails,
+  userCanCreateAlbumInEvent,
   userCanManageEvent,
 } from "@/services/rally-events";
 
@@ -48,6 +49,7 @@ export default async function RallyEventPage({ params }: RallyEventPageProps) {
   const backHref = user ? "/dashboard" : "/";
   const backLabel = user ? "Back to Dashboard" : "Back to Rallyism";
   const canManageEvent = userCanManageEvent(event, user);
+  const canCreateAlbum = userCanCreateAlbumInEvent(event, user);
   const description = event.description?.trim();
 
   return (
@@ -98,7 +100,7 @@ export default async function RallyEventPage({ params }: RallyEventPageProps) {
                   ))}
                 </div>
               </div>
-              {canManageEvent ? (
+              {canCreateAlbum ? (
                 <Link
                   href={`/rally-events/${event.id}/albums/new`}
                   className="inline-flex h-10 items-center justify-center rounded-md bg-rally-blue px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-rally-blue-hover"

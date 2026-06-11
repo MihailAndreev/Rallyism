@@ -15,6 +15,7 @@ import { canContribute } from "@/lib/auth/authorization";
 import { getCurrentUser } from "@/lib/auth/session";
 import {
   getAlbumMediaGalleryDetails,
+  userCanManageAlbum,
   userCanManageEvent,
   userCanManagePhoto,
   userCanManageVideo,
@@ -283,6 +284,7 @@ export default async function AlbumPage({
 
   const { album, event, mediaPage } = result;
   const canManageEvent = userCanManageEvent(event, user);
+  const canManageAlbum = userCanManageAlbum(album, user);
   const canBrowseTags = canContribute(user);
   const hasCover = Boolean(album.coverImageUrl);
   const uploadResultMessage = getUploadResultMessage(resolvedSearchParams);
@@ -298,8 +300,8 @@ export default async function AlbumPage({
   const galleryItems: AlbumMediaGridItem[] = mediaPage.items.map((item) => {
     const canManage =
       item.type === "video"
-        ? userCanManageVideo(event, item, user)
-        : userCanManagePhoto(event, item, user);
+        ? userCanManageVideo(album, user)
+        : userCanManagePhoto(album, user);
     const viewerHref = getAlbumPageHref({
       rallyEventId,
       albumId: parsedAlbumId,
@@ -393,6 +395,11 @@ export default async function AlbumPage({
             <p className="mt-2 text-sm text-zinc-500">
               {formatDate(album.albumDate)}
             </p>
+            {album.creatorName ? (
+              <p className="mt-2 text-sm text-zinc-500">
+                By <span className="font-medium text-zinc-700">{album.creatorName}</span>
+              </p>
+            ) : null}
           </div>
           {album.description ? (
             <p className="max-w-3xl text-base leading-7 text-zinc-600">
@@ -418,7 +425,7 @@ export default async function AlbumPage({
               </span>
             ))}
           </div>
-          {canManageEvent ? (
+          {canManageAlbum ? (
             <div className="flex flex-wrap gap-3">
               <Link
                 href={`/rally-events/${rallyEventId}/albums/${parsedAlbumId}/photos/upload`}

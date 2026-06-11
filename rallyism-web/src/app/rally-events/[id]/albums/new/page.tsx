@@ -5,7 +5,7 @@ import { createAlbumAction } from "@/app/rally-events/[id]/albums/new/actions";
 import { AlbumForm } from "@/components/rally-events/album-form";
 import { RallyAccessDenied } from "@/components/rally-events/rally-access-denied";
 import { requireContributor } from "@/lib/auth/authorization";
-import { getEditableRallyEvent } from "@/services/rally-events";
+import { getCreatableAlbumRallyEvent } from "@/services/rally-events";
 
 type NewAlbumPageProps = {
   params: Promise<{
@@ -33,7 +33,7 @@ export default async function NewAlbumPage({
     notFound();
   }
 
-  const result = await getEditableRallyEvent(rallyEventId, user);
+  const result = await getCreatableAlbumRallyEvent(rallyEventId, user);
 
   if (result.status === "not-found") {
     notFound();

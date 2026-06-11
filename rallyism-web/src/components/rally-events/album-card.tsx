@@ -87,6 +87,12 @@ export function AlbumCard({
           </p>
         ) : null}
 
+        {album.creatorName ? (
+          <p className="text-sm text-zinc-500">
+            By <span className="font-medium text-zinc-700">{album.creatorName}</span>
+          </p>
+        ) : null}
+
         <AlbumCounts
           mediaCount={album.mediaCount}
           photosCount={album.photosCount}
