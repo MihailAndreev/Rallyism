@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 
 import { logoutAction } from "@/app/logout/actions";
-import { canContribute, isAdmin } from "@/lib/auth/authorization";
+import { isAdmin } from "@/lib/auth/authorization";
 import { getCurrentUser } from "@/lib/auth/session";
 
 export async function Header() {
@@ -50,14 +50,6 @@ export async function Header() {
               >
                 Dashboard
               </Link>
-              {canContribute(user) ? (
-                <Link
-                  href="/tags"
-                  className={navItemClass}
-                >
-                  Tags
-                </Link>
-              ) : null}
               {isAdmin(user) ? (
                 <Link
                   href="/admin/rally-events"

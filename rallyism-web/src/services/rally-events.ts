@@ -5,6 +5,7 @@ import {
   eq,
   ilike,
   inArray,
+  ne,
   or,
   sql,
   type SQL,
@@ -40,6 +41,18 @@ export type TagSummary = {
   name: string;
   slug: string;
 };
+
+export type AdminTagListItem = TagSummary & {
+  createdAt: Date;
+  mediaCount: number;
+};
+
+export class TagManagementError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TagManagementError";
+  }
+}
 
 export type RallyEventSummary = {
   id: number;
@@ -535,7 +548,6 @@ export async function setMediaItemTags(input: {
 
 export async function searchTags(input: { query?: string; limit?: number } = {}) {
   const query = normalizeTagName(input.query ?? "");
-  const limit = input.limit ?? 24;
   const tagQuery = db
     .select({
       id: tags.id,
@@ -549,7 +561,70 @@ export async function searchTags(input: { query?: string; limit?: number } = {})
     tagQuery.where(ilike(tags.name, `%${query}%`));
   }
 
-  return tagQuery.orderBy(asc(tags.name)).limit(limit);
+  const orderedTagQuery = tagQuery.orderBy(asc(tags.name));
+
+  if (input.limit) {
+    return orderedTagQuery.limit(input.limit);
+  }
+
+  return orderedTagQuery;
+}
+
+export async function getAdminTags() {
+  const rows = await db
+    .select({
+      id: tags.id,
+      name: tags.name,
+      slug: tags.slug,
+      createdAt: tags.createdAt,
+      mediaCount: sql<number>`count(${mediaTags.mediaItemId})::int`,
+    })
+    .from(tags)
+    .leftJoin(mediaTags, eq(mediaTags.tagId, tags.id))
+    .groupBy(tags.id, tags.name, tags.slug, tags.createdAt)
+    .orderBy(asc(tags.name));
+
+  return rows satisfies AdminTagListItem[];
+}
+
+export async function updateTag(input: { name: string; tagId: number }) {
+  const normalizedName = normalizeTagName(input.name).slice(0, 80);
+  const slug = getTagSlug(normalizedName);
+
+  if (!normalizedName || !slug) {
+    throw new TagManagementError("Enter a valid tag name.");
+  }
+
+  const [existing] = await db
+    .select({ id: tags.id })
+    .from(tags)
+    .where(and(eq(tags.slug, slug), ne(tags.id, input.tagId)))
+    .limit(1);
+
+  if (existing) {
+    throw new TagManagementError("Another tag already uses this name.");
+  }
+
+  const [updated] = await db
+    .update(tags)
+    .set({ name: normalizedName, slug })
+    .where(eq(tags.id, input.tagId))
+    .returning({ id: tags.id });
+
+  if (!updated) {
+    throw new TagManagementError("Tag not found.");
+  }
+}
+
+export async function deleteTag(tagId: number) {
+  const [deleted] = await db
+    .delete(tags)
+    .where(eq(tags.id, tagId))
+    .returning({ id: tags.id });
+
+  if (!deleted) {
+    throw new TagManagementError("Tag not found.");
+  }
 }
 
 export async function getTagBySlug(slug: string) {

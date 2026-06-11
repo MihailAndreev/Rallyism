@@ -187,6 +187,12 @@ function AdminLinks() {
       >
         Rally events
       </Link>
+      <Link
+        href="/admin/tags"
+        className="inline-flex h-10 items-center justify-center rounded-md border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-900 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-100"
+      >
+        Tags
+      </Link>
     </div>
   );
 }

@@ -293,6 +293,12 @@ export default async function AdminUsersPage({
         >
           Rally events
         </Link>
+        <Link
+          href="/admin/tags"
+          className="inline-flex h-10 items-center justify-center rounded-md border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-900 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-100"
+        >
+          Tags
+        </Link>
       </div>
 
       <section className="relative overflow-hidden rounded-lg border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
