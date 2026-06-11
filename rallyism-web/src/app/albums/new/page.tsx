@@ -78,13 +78,15 @@ export default async function ChooseAlbumEventPage({
     <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
       <Link
         href="/dashboard"
-        className="inline-flex text-sm font-semibold text-rally-blue hover:text-rally-blue-hover"
+        className="inline-flex h-10 items-center justify-center rounded-md border border-rally-orange-border bg-white px-4 text-sm font-semibold text-rally-blue shadow-sm transition hover:bg-rally-orange-soft hover:text-rally-blue-hover"
       >
         Back to dashboard
       </Link>
 
       <section className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
-        <p className="text-sm font-semibold uppercase text-rally-blue">Album</p>
+        <span className="inline-flex rounded-md border border-rally-orange-border bg-white px-2.5 py-1 text-xs font-semibold uppercase text-rally-blue">
+          Album
+        </span>
         <h1 className="mt-3 text-4xl font-semibold tracking-normal text-zinc-950">
           Choose event
         </h1>
@@ -133,7 +135,7 @@ export default async function ChooseAlbumEventPage({
                   </div>
                 </div>
 
-                <span className="inline-flex h-10 shrink-0 items-center justify-center rounded-md bg-rally-blue px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-rally-blue-hover">
+                <span className="inline-flex h-10 shrink-0 items-center justify-center rounded-md border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-900 shadow-sm transition group-hover:border-rally-blue-border group-hover:text-rally-blue">
                   Create album
                 </span>
               </div>
