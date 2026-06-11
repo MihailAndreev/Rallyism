@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { formatDateRange } from "@/components/rally-events/rally-event-format";
 import type { RallyEventSummary } from "@/services/rally-events";
 
 export function RallyEventHeader({
@@ -11,17 +12,26 @@ export function RallyEventHeader({
   backHref?: string;
   backLabel?: string;
 }) {
+  const details = [
+    event.rallyName,
+    event.seasonYear,
+    event.startDate || event.endDate
+      ? formatDateRange(event.startDate, event.endDate)
+      : null,
+    event.country,
+    event.region,
+  ].filter(Boolean);
+
   return (
-    <section className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm">
-      {event.coverImageUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={event.coverImageUrl}
-          alt={`${event.title} cover`}
-          className="h-72 w-full object-cover"
-        />
-      ) : null}
-      <div className="space-y-5 p-6 sm:p-8">
+    <section className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+      <div className="space-y-4">
+        <Link
+          href={backHref}
+          className="inline-flex h-10 items-center justify-center rounded-md bg-rally-blue px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-rally-blue-hover"
+        >
+          {backLabel}
+        </Link>
+
         <div className="flex flex-wrap items-center gap-2">
           <span className="rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-semibold capitalize text-zinc-600">
             {event.visibility}
@@ -32,18 +42,22 @@ export function RallyEventHeader({
             </span>
           ) : null}
         </div>
+
         <div>
-          <h1 className="text-4xl font-semibold tracking-normal text-zinc-950 sm:text-5xl">
+          <h1 className="text-3xl font-semibold tracking-normal text-zinc-950 sm:text-4xl">
             {event.title}
           </h1>
-          <p className="mt-2 text-lg text-zinc-600">{event.rallyName}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {details.map((detail) => (
+              <span
+                key={String(detail)}
+                className="rounded-md border border-rally-orange-border bg-white px-2.5 py-1 text-xs font-medium text-zinc-700"
+              >
+                {detail}
+              </span>
+            ))}
+          </div>
         </div>
-        <Link
-          href={backHref}
-          className="inline-flex text-sm font-semibold text-rally-blue hover:text-rally-blue-hover"
-        >
-          {backLabel}
-        </Link>
       </div>
     </section>
   );

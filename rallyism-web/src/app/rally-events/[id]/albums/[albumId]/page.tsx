@@ -10,7 +10,6 @@ import {
 import { AlbumPhotoViewer } from "@/components/rally-events/album-photo-viewer";
 import { RallyAccessDenied } from "@/components/rally-events/rally-access-denied";
 import { formatDate } from "@/components/rally-events/rally-event-format";
-import { RallyEventStats } from "@/components/rally-events/rally-event-stats";
 import { canContribute } from "@/lib/auth/authorization";
 import { getCurrentUser } from "@/lib/auth/session";
 import {
@@ -335,9 +334,9 @@ export default async function AlbumPage({
     <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
       <Link
         href={`/rally-events/${rallyEventId}`}
-        className="inline-flex text-sm font-semibold text-rally-blue hover:text-rally-blue-hover"
+        className="inline-flex h-10 items-center justify-center rounded-md border border-rally-orange-border bg-white px-4 text-sm font-semibold text-rally-blue shadow-sm transition hover:bg-rally-orange-soft hover:text-rally-blue-hover"
       >
-        Back to rally event
+        Back to {event.rallyName}
       </Link>
 
       <section className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm">
@@ -364,30 +363,38 @@ export default async function AlbumPage({
               {album.description}
             </p>
           ) : null}
-          <RallyEventStats
-            albumsCount={0}
-            mediaCount={album.mediaCount}
-            photosCount={album.photosCount}
-            videosCount={album.videosCount}
-            showAlbums={false}
-          />
+          <div className="flex flex-wrap gap-2">
+            {[
+              { label: "Media", value: album.mediaCount },
+              { label: "Photos", value: album.photosCount },
+              { label: "Videos", value: album.videosCount },
+            ].map((stat) => (
+              <span
+                key={stat.label}
+                className="rounded-md border border-rally-orange-border bg-white px-2.5 py-1 text-xs font-medium text-zinc-700"
+              >
+                {stat.label}{" "}
+                <span className="font-bold text-zinc-900">{stat.value}</span>
+              </span>
+            ))}
+          </div>
           {canManageEvent ? (
             <div className="flex flex-wrap gap-3">
               <Link
                 href={`/rally-events/${rallyEventId}/albums/${parsedAlbumId}/photos/upload`}
-                className="inline-flex h-10 items-center justify-center rounded-md bg-rally-blue px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-rally-blue-hover"
+                className="inline-flex h-10 items-center justify-center rounded-md bg-rally-orange px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-rally-orange/90"
               >
                 Upload photos
               </Link>
               <Link
                 href={`/rally-events/${rallyEventId}/albums/${parsedAlbumId}/videos/new`}
-                className="inline-flex h-10 items-center justify-center rounded-md border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-900 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-100"
+                className="inline-flex h-10 items-center justify-center rounded-md bg-rally-orange px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-rally-orange/90"
               >
                 Add YouTube video
               </Link>
               <Link
                 href={`/rally-events/${rallyEventId}/albums/${parsedAlbumId}/edit`}
-                className="inline-flex h-10 items-center justify-center rounded-md border border-zinc-300 bg-white px-4 text-sm font-semibold text-zinc-900 shadow-sm transition hover:border-zinc-400 hover:bg-zinc-100"
+                className="inline-flex h-10 items-center justify-center rounded-md bg-rally-blue px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-rally-blue-hover"
               >
                 Edit album
               </Link>

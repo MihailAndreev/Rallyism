@@ -1,8 +1,30 @@
 import Link from "next/link";
 
 import { formatDate } from "@/components/rally-events/rally-event-format";
-import { RallyEventStats } from "@/components/rally-events/rally-event-stats";
 import type { RallyEventAlbum } from "@/services/rally-events";
+
+function AlbumCounts({
+  mediaCount,
+  photosCount,
+  videosCount,
+}: Pick<RallyEventAlbum, "mediaCount" | "photosCount" | "videosCount">) {
+  const counts = [
+    { label: "media", value: mediaCount },
+    { label: "photos", value: photosCount },
+    { label: "videos", value: videosCount },
+  ];
+
+  return (
+    <div className="flex flex-wrap gap-2 text-xs font-medium text-zinc-500">
+      {counts.map((count) => (
+        <span key={count.label}>
+          <span className="font-semibold text-zinc-800">{count.value}</span>{" "}
+          {count.label}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 export function AlbumCard({ album }: { album: RallyEventAlbum }) {
   return (
@@ -10,37 +32,66 @@ export function AlbumCard({ album }: { album: RallyEventAlbum }) {
       href={`/rally-events/${album.rallyEventId}/albums/${album.id}`}
       className="group block overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-rally-blue-border hover:shadow-md"
     >
-      {album.coverImageUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={album.coverImageUrl}
-          alt={`${album.title} cover`}
-          className="h-40 w-full object-cover"
-        />
-      ) : null}
-      <div className="space-y-4 p-5">
-        <div>
-          <h3 className="text-lg font-semibold tracking-normal text-zinc-950 group-hover:text-rally-blue">
+      <div className="relative aspect-[16/10] overflow-hidden bg-zinc-100">
+        {album.coverImageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={album.coverImageUrl}
+            alt={`${album.title} cover`}
+            className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center bg-zinc-100 px-5 text-center">
+            <span className="text-sm font-semibold text-zinc-500">
+              {album.title}
+            </span>
+          </div>
+        )}
+        <span className="absolute bottom-3 left-3 rounded-md bg-white/90 px-2.5 py-1 text-xs font-semibold text-zinc-700 shadow-sm">
+          {formatDate(album.albumDate)}
+        </span>
+      </div>
+
+      <div className="space-y-3 p-5">
+        <div className="flex items-start justify-between gap-4">
+          <h3 className="text-xl font-semibold tracking-normal text-zinc-950 group-hover:text-rally-blue">
             {album.title}
           </h3>
-          <p className="mt-1 text-sm text-zinc-500">
-            {formatDate(album.albumDate)}
-          </p>
+          <span className="mt-1 shrink-0 text-sm font-semibold text-rally-blue">
+            Open
+          </span>
         </div>
+
         {album.description ? (
-          <p className="text-sm leading-6 text-zinc-600">{album.description}</p>
+          <p className="line-clamp-2 text-sm leading-6 text-zinc-600">
+            {album.description}
+          </p>
         ) : null}
-        <RallyEventStats
-          albumsCount={0}
+
+        <AlbumCounts
           mediaCount={album.mediaCount}
           photosCount={album.photosCount}
           videosCount={album.videosCount}
-          showAlbums={false}
         />
-        <span className="inline-flex text-sm font-semibold text-rally-blue">
-          View album
-        </span>
       </div>
     </Link>
+  );
+}
+
+export function EmptyAlbumCard() {
+  return (
+    <div className="overflow-hidden rounded-lg border border-dashed border-zinc-300 bg-white shadow-sm">
+      <div className="flex aspect-[16/10] items-center justify-center bg-zinc-50 px-5 text-center">
+        <span className="text-sm font-semibold text-zinc-500">No albums yet</span>
+      </div>
+      <div className="space-y-2 p-5">
+        <h3 className="text-xl font-semibold tracking-normal text-zinc-950">
+          Rally memories will appear here.
+        </h3>
+        <p className="text-sm leading-6 text-zinc-500">
+          Albums and media are still empty for this event.
+        </p>
+      </div>
+    </div>
   );
 }

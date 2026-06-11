@@ -6,13 +6,27 @@ export function RallyEventStats({
   photosCount,
   videosCount,
   showAlbums = true,
-}: RallyEventSummaryCounts & { showAlbums?: boolean }) {
+  compact = false,
+}: RallyEventSummaryCounts & { showAlbums?: boolean; compact?: boolean }) {
   const stats = [
     ...(showAlbums ? [{ label: "Albums", value: albumsCount }] : []),
     { label: "Media", value: mediaCount },
     { label: "Photos", value: photosCount },
     { label: "Videos", value: videosCount },
   ];
+
+  if (compact) {
+    return (
+      <dl className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-zinc-500">
+        {stats.map((stat) => (
+          <div key={stat.label} className="flex items-baseline gap-1.5">
+            <dt>{stat.label}</dt>
+            <dd className="font-semibold text-zinc-800">{stat.value}</dd>
+          </div>
+        ))}
+      </dl>
+    );
+  }
 
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">

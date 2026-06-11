@@ -41,3 +41,27 @@ button:not(:disabled),
 [role="button"]:not([aria-disabled="true"]) {
   cursor: pointer;
 }
+
+.media-preview-strip-track {
+  gap: 8px;
+}
+
+.media-preview-strip-card {
+  flex: 0 0 calc((100% - 16px) / 3);
+}
+
+@media (min-width: 640px) {
+  .media-preview-strip-track {
+    gap: 10px;
+  }
+
+  .media-preview-strip-card {
+    flex-basis: calc((100% - 30px) / 4);
+  }
+}
+
+@media (min-width: 1024px) {
+  .media-preview-strip-card {
+    flex-basis: calc((100% - 40px) / 5);
+  }
+}

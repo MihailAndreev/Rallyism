@@ -1432,7 +1432,7 @@ export async function getRallyEventMediaPreview(
     .from(mediaItems)
     .innerJoin(albums, eq(mediaItems.albumId, albums.id))
     .where(sql`${mediaItems.rallyEventId} = ${rallyEventId} and (${mediaItems.type} = 'video' or ${mediaItems.thumbnailImageUrl} is not null or ${mediaItems.displayImageUrl} is not null or ${mediaItems.originalImageUrl} is not null)`)
-    .orderBy(asc(albums.sortOrder), asc(albums.albumDate), asc(mediaItems.sortOrder))
+    .orderBy(sql`random()`)
     .limit(limit);
 }
 
@@ -1461,7 +1461,7 @@ export async function getRallyEventDetails(
   const [counts, eventAlbums, mediaPreview] = await Promise.all([
     getRallyEventSummaryCounts(id),
     getRallyEventAlbums(id),
-    getRallyEventMediaPreview(id, 6),
+    getRallyEventMediaPreview(id, 12),
   ]);
 
   return {

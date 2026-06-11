@@ -7,6 +7,10 @@ import { getCurrentUser } from "@/lib/auth/session";
 
 export async function Header() {
   const user = await getCurrentUser();
+  const navItemClass =
+    "inline-flex h-9 items-center justify-center rounded-md border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-700 shadow-sm transition hover:border-rally-blue-border hover:bg-rally-blue-soft hover:text-rally-blue";
+  const userBadgeClass =
+    "inline-flex h-9 items-center justify-center rounded-md border border-rally-orange-border bg-rally-orange-soft px-3 text-sm font-semibold text-zinc-950";
 
   return (
     <header className="border-b border-zinc-200 bg-white/90">
@@ -28,13 +32,13 @@ export async function Header() {
         <nav aria-label="Primary navigation" className="flex flex-wrap gap-2">
           <Link
             href="/"
-            className="rounded-md px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-950"
+            className={navItemClass}
           >
             Home
           </Link>
           <Link
             href="/about"
-            className="rounded-md px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-950"
+            className={navItemClass}
           >
             About
           </Link>
@@ -42,14 +46,14 @@ export async function Header() {
             <>
               <Link
                 href="/dashboard"
-                className="rounded-md px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-950"
+                className={navItemClass}
               >
                 Dashboard
               </Link>
               {canContribute(user) ? (
                 <Link
                   href="/tags"
-                  className="rounded-md px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-950"
+                  className={navItemClass}
                 >
                   Tags
                 </Link>
@@ -57,18 +61,18 @@ export async function Header() {
               {isAdmin(user) ? (
                 <Link
                   href="/admin/rally-events"
-                  className="rounded-md px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-950"
+                  className={navItemClass}
                 >
                   Admin
                 </Link>
               ) : null}
-              <span className="rounded-md px-3 py-2 text-sm font-semibold text-zinc-950">
+              <span className={userBadgeClass}>
                 {user.name || user.email}
               </span>
               <form action={logoutAction}>
                 <button
                   type="submit"
-                  className="rounded-md px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-950"
+                  className={navItemClass}
                 >
                   Logout
                 </button>
@@ -78,13 +82,13 @@ export async function Header() {
             <>
               <Link
                 href="/login"
-                className="rounded-md px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-950"
+                className={navItemClass}
               >
                 Login
               </Link>
               <Link
                 href="/register"
-                className="rounded-md px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-950"
+                className={navItemClass}
               >
                 Register
               </Link>
