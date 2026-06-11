@@ -15,6 +15,11 @@ import { db } from "@/db";
 import { albums, mediaItems, mediaTags, rallyEvents, tags, users } from "@/db/schema";
 import { canContribute, isAdmin } from "@/lib/auth/authorization";
 import {
+  eventSupportsAlbumVisibilityControl,
+  getEffectiveAlbumVisibility,
+  type AlbumVisibility,
+} from "@/lib/rally-events/album-visibility";
+import {
   getTagSlug,
   normalizeTagName,
   parseTagNames,
@@ -81,6 +86,8 @@ export type RallyEventAlbum = {
   description: string | null;
   albumDate: string | null;
   coverImageUrl: string | null;
+  visibility: AlbumVisibility;
+  effectiveVisibility: AlbumVisibility;
   sortOrder: number;
   createdAt: Date;
 } & RallyEventSummaryCounts;
@@ -90,6 +97,7 @@ export type AlbumFormInput = {
   description: string;
   albumDate: string;
   coverImageUrl: string;
+  visibility?: string;
   sortOrder: string;
 };
 
@@ -98,6 +106,7 @@ export type AlbumFormValues = {
   description: string | null;
   albumDate: string | null;
   coverImageUrl: string | null;
+  visibility: AlbumVisibility;
   sortOrder: number;
 };
 
@@ -423,6 +432,7 @@ export type EditablePhotoResult =
 
 const validChampionships = ["WRC", "ERC", "national", "other"] as const;
 const validVisibilities = ["private", "public", "unlisted"] as const;
+const validAlbumVisibilities = ["private", "public"] as const;
 
 function parseDateOnly(value: string | null) {
   if (!value) {
@@ -462,6 +472,22 @@ function userCanAccessEvent(
   }
 
   return currentUser.role === "admin" || event.createdById === currentUser.id;
+}
+
+function userCanAccessAlbum(
+  event: { visibility: RallyEventVisibility; createdById: number | null },
+  album: { visibility: AlbumVisibility },
+  currentUser: AuthUser | null,
+) {
+  if (!userCanAccessEvent(event, currentUser)) {
+    return false;
+  }
+
+  if (getEffectiveAlbumVisibility(event.visibility, album.visibility) === "public") {
+    return true;
+  }
+
+  return userCanManageEvent(event, currentUser);
 }
 
 export function userCanManageEvent(
@@ -670,8 +696,11 @@ function getTaggedPhotoAccessWhere(currentUser: AuthUser) {
   }
 
   return or(
-    inArray(rallyEvents.visibility, ["public", "unlisted"]),
     eq(rallyEvents.createdById, currentUser.id),
+    and(
+      inArray(rallyEvents.visibility, ["public", "unlisted"]),
+      eq(albums.visibility, "public"),
+    ),
   );
 }
 
@@ -705,6 +734,7 @@ export async function getTaggedPhotosPage(input: {
     })
     .from(mediaTags)
     .innerJoin(mediaItems, eq(mediaTags.mediaItemId, mediaItems.id))
+    .innerJoin(albums, eq(mediaItems.albumId, albums.id))
     .innerJoin(rallyEvents, eq(mediaItems.rallyEventId, rallyEvents.id))
     .where(whereClause);
 
@@ -814,6 +844,14 @@ function parseVisibility(value: string): RallyEventVisibility {
   throw new RallyEventValidationError("Choose a valid visibility.");
 }
 
+function parseAlbumVisibility(value: string): AlbumVisibility {
+  if (validAlbumVisibilities.includes(value as AlbumVisibility)) {
+    return value as AlbumVisibility;
+  }
+
+  throw new AlbumValidationError("Choose a valid album visibility.");
+}
+
 export function validateRallyEventInput(
   input: RallyEventFormInput,
   currentUser: AuthUser,
@@ -886,6 +924,9 @@ export function validateAlbumInput(input: AlbumFormInput): AlbumFormValues {
     description: normalizeNullableText(input.description),
     albumDate: normalizeOptionalDate(input.albumDate),
     coverImageUrl: normalizeNullableText(input.coverImageUrl),
+    visibility: input.visibility
+      ? parseAlbumVisibility(input.visibility)
+      : "public",
     sortOrder,
   };
 }
@@ -979,6 +1020,85 @@ function toRallyEventSummary(
     ...counts,
     creatorName,
   };
+}
+
+function summarizeVisibleAlbums(eventAlbums: RallyEventAlbum[]): RallyEventSummaryCounts {
+  return eventAlbums.reduce<RallyEventSummaryCounts>(
+    (totals, album) => ({
+      albumsCount: totals.albumsCount + 1,
+      mediaCount: totals.mediaCount + album.mediaCount,
+      photosCount: totals.photosCount + album.photosCount,
+      videosCount: totals.videosCount + album.videosCount,
+    }),
+    normalizeCounts(undefined),
+  );
+}
+
+async function getAlbumRowsByEventIds(rallyEventIds?: number[]) {
+  if (rallyEventIds && rallyEventIds.length === 0) {
+    return [];
+  }
+
+  const query = db.select().from(albums).$dynamic();
+
+  if (rallyEventIds) {
+    query.where(inArray(albums.rallyEventId, rallyEventIds));
+  }
+
+  return query.orderBy(
+    asc(albums.rallyEventId),
+    asc(albums.sortOrder),
+    asc(albums.albumDate),
+    asc(albums.createdAt),
+  );
+}
+
+async function getVisibleAlbumMaps(input: {
+  events: Array<typeof rallyEvents.$inferSelect>;
+  currentUser: AuthUser | null;
+}) {
+  const eventIds = input.events.map((event) => event.id);
+  const [albumRows, countsByAlbum] = await Promise.all([
+    getAlbumRowsByEventIds(eventIds),
+    Promise.all(eventIds.map((eventId) => getAlbumCountsByAlbum(eventId))),
+  ]);
+  const countsByEventId = new Map<number, Map<number, RallyEventSummaryCounts>>(
+    eventIds.map((eventId, index) => [eventId, countsByAlbum[index] ?? new Map()]),
+  );
+  const eventsById = new Map(input.events.map((event) => [event.id, event]));
+  const albumsByEventId = new Map<number, RallyEventAlbum[]>();
+  const summaryCountsByEventId = new Map<number, RallyEventSummaryCounts>();
+
+  for (const event of input.events) {
+    albumsByEventId.set(event.id, []);
+    summaryCountsByEventId.set(event.id, normalizeCounts(undefined));
+  }
+
+  for (const album of albumRows) {
+    const event = eventsById.get(album.rallyEventId);
+
+    if (!event || !userCanAccessAlbum(event, album, input.currentUser)) {
+      continue;
+    }
+
+    const eventAlbum = toRallyEventAlbum(
+      album,
+      normalizeCounts({
+        albumsCount: 0,
+        ...countsByEventId.get(album.rallyEventId)?.get(album.id),
+      }),
+      event.visibility,
+    );
+    const visibleAlbums = albumsByEventId.get(album.rallyEventId) ?? [];
+    visibleAlbums.push(eventAlbum);
+    albumsByEventId.set(album.rallyEventId, visibleAlbums);
+  }
+
+  for (const [eventId, visibleAlbums] of albumsByEventId) {
+    summaryCountsByEventId.set(eventId, summarizeVisibleAlbums(visibleAlbums));
+  }
+
+  return { albumsByEventId, summaryCountsByEventId };
 }
 
 export async function getRallyEventSummaryCounts(
@@ -1443,17 +1563,13 @@ export async function getPublicRallyEventsPage(input: {
     .limit(pageSize)
     .offset(offset);
 
-  const eventIds = eventRows.map((row) => row.event.id);
-  const [albumCounts, mediaCounts] = await Promise.all([
-    getAlbumCountsByEvent(eventIds),
-    getMediaCountsByEvent(eventIds),
-  ]);
+  const { summaryCountsByEventId } = await getVisibleAlbumMaps({
+    events: eventRows.map((row) => row.event),
+    currentUser: null,
+  });
 
   const events = eventRows.map((row) => {
-    const counts = normalizeCounts({
-      albumsCount: albumCounts.get(row.event.id),
-      ...mediaCounts.get(row.event.id),
-    });
+    const counts = summaryCountsByEventId.get(row.event.id) ?? normalizeCounts(undefined);
 
     return toRallyEventSummary(row.event, counts, row.creatorName);
   });
@@ -1617,6 +1733,11 @@ export async function getRallyEventAccess(
 
 export async function getRallyEventAlbums(
   rallyEventId: number,
+  input: {
+    eventVisibility?: RallyEventVisibility;
+    eventCreatedById?: number | null;
+    currentUser?: AuthUser | null;
+  } = {},
 ): Promise<RallyEventAlbum[]> {
   const [albumRows, countsByAlbum] = await Promise.all([
     db
@@ -1626,14 +1747,30 @@ export async function getRallyEventAlbums(
       .orderBy(asc(albums.sortOrder), asc(albums.albumDate), asc(albums.createdAt)),
     getAlbumCountsByAlbum(rallyEventId),
   ]);
+  const eventVisibility = input.eventVisibility ?? "public";
+  const currentUser = input.currentUser ?? null;
+  const visibleAlbums =
+    input.eventVisibility === undefined
+      ? albumRows
+      : albumRows.filter((album) =>
+          userCanAccessAlbum(
+            {
+              visibility: eventVisibility,
+              createdById: input.eventCreatedById ?? null,
+            },
+            album,
+            currentUser,
+          ),
+        );
 
-  return albumRows.map((album) =>
+  return visibleAlbums.map((album) =>
     toRallyEventAlbum(
       album,
       normalizeCounts({
         albumsCount: 0,
         ...countsByAlbum.get(album.id),
       }),
+      eventVisibility,
     ),
   );
 }
@@ -1641,6 +1778,7 @@ export async function getRallyEventAlbums(
 function toRallyEventAlbum(
   album: typeof albums.$inferSelect,
   counts: RallyEventSummaryCounts,
+  eventVisibility: RallyEventVisibility,
 ): RallyEventAlbum {
   return {
     id: album.id,
@@ -1649,6 +1787,11 @@ function toRallyEventAlbum(
     description: album.description,
     albumDate: album.albumDate,
     coverImageUrl: album.coverImageUrl,
+    visibility: album.visibility,
+    effectiveVisibility: getEffectiveAlbumVisibility(
+      eventVisibility,
+      album.visibility,
+    ),
     sortOrder: album.sortOrder,
     createdAt: album.createdAt,
     ...counts,
@@ -1657,8 +1800,21 @@ function toRallyEventAlbum(
 
 export async function getRallyEventMediaPreview(
   rallyEventId: number,
+  visibleAlbumIds?: number[],
   limit = 6,
 ): Promise<RallyEventMediaPreviewItem[]> {
+  if (visibleAlbumIds && visibleAlbumIds.length === 0) {
+    return [];
+  }
+
+  const whereClauses: SQL[] = [
+    sql`${mediaItems.rallyEventId} = ${rallyEventId} and (${mediaItems.type} = 'video' or ${mediaItems.thumbnailImageUrl} is not null or ${mediaItems.displayImageUrl} is not null or ${mediaItems.originalImageUrl} is not null)`,
+  ];
+
+  if (visibleAlbumIds) {
+    whereClauses.push(inArray(mediaItems.albumId, visibleAlbumIds));
+  }
+
   return db
     .select({
       id: mediaItems.id,
@@ -1674,7 +1830,7 @@ export async function getRallyEventMediaPreview(
     })
     .from(mediaItems)
     .innerJoin(albums, eq(mediaItems.albumId, albums.id))
-    .where(sql`${mediaItems.rallyEventId} = ${rallyEventId} and (${mediaItems.type} = 'video' or ${mediaItems.thumbnailImageUrl} is not null or ${mediaItems.displayImageUrl} is not null or ${mediaItems.originalImageUrl} is not null)`)
+    .where(and(...whereClauses))
     .orderBy(sql`random()`)
     .limit(limit);
 }
@@ -1701,11 +1857,17 @@ export async function getRallyEventDetails(
     return { status: "access-denied" };
   }
 
-  const [counts, eventAlbums, mediaPreview] = await Promise.all([
-    getRallyEventSummaryCounts(id),
-    getRallyEventAlbums(id),
-    getRallyEventMediaPreview(id, 12),
-  ]);
+  const eventAlbums = await getRallyEventAlbums(id, {
+    eventVisibility: row.event.visibility,
+    eventCreatedById: row.event.createdById,
+    currentUser,
+  });
+  const counts = summarizeVisibleAlbums(eventAlbums);
+  const mediaPreview = await getRallyEventMediaPreview(
+    id,
+    eventAlbums.map((album) => album.id),
+    12,
+  );
 
   return {
     status: "allowed",
@@ -1863,6 +2025,9 @@ export async function createAlbum(input: {
     .insert(albums)
     .values({
       ...input.values,
+      visibility: eventSupportsAlbumVisibilityControl(eventAccess.event.visibility)
+        ? input.values.visibility
+        : "private",
       rallyEventId: input.rallyEventId,
       createdById: input.currentUser.id,
       updatedAt: new Date(),
@@ -1906,7 +2071,7 @@ export async function getEditableAlbum(input: {
   return {
     status: "allowed",
     event: eventAccess.event,
-    album: toRallyEventAlbum(album, albumCounts),
+    album: toRallyEventAlbum(album, albumCounts, eventAccess.event.visibility),
   };
 }
 
@@ -1934,6 +2099,9 @@ export async function updateAlbum(input: {
     .update(albums)
     .set({
       ...input.values,
+      visibility: eventSupportsAlbumVisibilityControl(access.event.visibility)
+        ? input.values.visibility
+        : "private",
       updatedAt: new Date(),
     })
     .where(
@@ -2627,6 +2795,10 @@ export async function getAlbumPlaceholderDetails(input: {
     return { status: "not-found" as const };
   }
 
+  if (!userCanAccessAlbum(access.event, album, input.currentUser)) {
+    return { status: "access-denied" as const };
+  }
+
   return {
     status: "allowed" as const,
     event: access.event,
@@ -2663,8 +2835,16 @@ export async function getAlbumMediaGalleryDetails(input: {
     return { status: "not-found" };
   }
 
-  const [eventCounts, albumCounts, mediaPage, viewerPhotos] = await Promise.all([
-    getRallyEventSummaryCounts(input.rallyEventId),
+  if (!userCanAccessAlbum(access.event, album, input.currentUser)) {
+    return { status: "access-denied" };
+  }
+
+  const visibleEventAlbums = await getRallyEventAlbums(input.rallyEventId, {
+    eventVisibility: access.event.visibility,
+    eventCreatedById: access.event.createdById,
+    currentUser: input.currentUser,
+  });
+  const [albumCounts, mediaPage, viewerPhotos] = await Promise.all([
     getSingleAlbumMediaCounts(input.albumId),
     getAlbumMediaPage({
       rallyEventId: input.rallyEventId,
@@ -2678,21 +2858,12 @@ export async function getAlbumMediaGalleryDetails(input: {
       albumId: input.albumId,
     }),
   ]);
+  const eventCounts = summarizeVisibleAlbums(visibleEventAlbums);
 
   return {
     status: "allowed",
     event: toRallyEventSummary(access.event, eventCounts, null),
-    album: {
-      id: album.id,
-      rallyEventId: album.rallyEventId,
-      title: album.title,
-      description: album.description,
-      albumDate: album.albumDate,
-      coverImageUrl: album.coverImageUrl,
-      sortOrder: album.sortOrder,
-      createdAt: album.createdAt,
-      ...albumCounts,
-    },
+    album: toRallyEventAlbum(album, albumCounts, access.event.visibility),
     mediaPage,
     viewerPhotos,
   };

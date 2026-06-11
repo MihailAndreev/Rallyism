@@ -32,6 +32,10 @@ export const visibilityEnum = pgEnum("visibility", [
   "public",
   "unlisted",
 ]);
+export const albumVisibilityEnum = pgEnum("album_visibility", [
+  "private",
+  "public",
+]);
 export const mediaTypeEnum = pgEnum("media_type", ["photo", "video"]);
 export const uploadBatchStatusEnum = pgEnum("upload_batch_status", [
   "created",
@@ -132,6 +136,7 @@ export const albums = pgTable(
     albumDate: date("album_date"),
     coverImageUrl: text("cover_image_url"),
     coverImageR2Key: text("cover_image_r2_key"),
+    visibility: albumVisibilityEnum("visibility").notNull().default("private"),
     sortOrder: integer("sort_order").notNull().default(0),
     createdById: integer("created_by_id").references(() => users.id, {
       onDelete: "set null",
@@ -145,6 +150,7 @@ export const albums = pgTable(
   },
   (table) => [
     index("albums_rally_event_idx").on(table.rallyEventId),
+    index("albums_visibility_idx").on(table.visibility),
     index("albums_created_by_idx").on(table.createdById),
   ],
 );

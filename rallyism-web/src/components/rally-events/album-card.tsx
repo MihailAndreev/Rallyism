@@ -27,7 +27,13 @@ function AlbumCounts({
   );
 }
 
-export function AlbumCard({ album }: { album: RallyEventAlbum }) {
+export function AlbumCard({
+  album,
+  showPrivateIndicator = false,
+}: {
+  album: RallyEventAlbum;
+  showPrivateIndicator?: boolean;
+}) {
   return (
     <Link
       href={`/rally-events/${album.rallyEventId}/albums/${album.id}`}
@@ -60,9 +66,16 @@ export function AlbumCard({ album }: { album: RallyEventAlbum }) {
 
       <div className="space-y-3 p-5">
         <div className="flex items-start justify-between gap-4">
-          <h3 className="text-xl font-semibold tracking-normal text-zinc-950 group-hover:text-rally-blue">
-            {album.title}
-          </h3>
+          <div className="space-y-2">
+            {showPrivateIndicator && album.effectiveVisibility === "private" ? (
+              <span className="inline-flex rounded-md border border-zinc-300 bg-zinc-100 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-zinc-600">
+                Private
+              </span>
+            ) : null}
+            <h3 className="text-xl font-semibold tracking-normal text-zinc-950 group-hover:text-rally-blue">
+              {album.title}
+            </h3>
+          </div>
           <span className="mt-1 shrink-0 text-sm font-semibold text-rally-blue">
             Open
           </span>

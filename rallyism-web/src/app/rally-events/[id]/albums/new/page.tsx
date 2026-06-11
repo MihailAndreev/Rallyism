@@ -72,6 +72,7 @@ export default async function NewAlbumPage({
           action={createAlbumAction}
           cancelHref={`/rally-events/${rallyEventId}`}
           error={resolvedSearchParams?.error}
+          eventVisibility={result.event.visibility}
           rallyEventId={rallyEventId}
           submitLabel="Create album"
         />

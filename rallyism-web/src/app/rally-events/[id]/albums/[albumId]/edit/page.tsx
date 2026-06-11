@@ -87,6 +87,7 @@ export default async function EditAlbumPage({
           cancelHref={`/rally-events/${rallyEventId}/albums/${parsedAlbumId}`}
           deleteAction={deleteAlbumAction}
           error={resolvedSearchParams?.error}
+          eventVisibility={result.event.visibility}
           rallyEventId={rallyEventId}
           submitLabel="Save changes"
         />

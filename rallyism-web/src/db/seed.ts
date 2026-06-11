@@ -117,6 +117,7 @@ async function getOrCreateAlbum(input: {
   albumDate: string;
   coverImageUrl?: string;
   coverImageR2Key?: string;
+  visibility?: "private" | "public";
   sortOrder: number;
   createdById: number;
 }) {
@@ -262,6 +263,7 @@ async function main() {
     albumDate: "2025-05-16",
     coverImageUrl: "https://images.rallyism.test/rallies/portugal-2025/friday-cover.jpg",
     coverImageR2Key: "rallies/portugal-2025/friday-cover.jpg",
+    visibility: "public",
     sortOrder: 10,
     createdById: admin.id,
   });
@@ -273,6 +275,7 @@ async function main() {
     albumDate: "2025-05-17",
     coverImageUrl: "https://images.rallyism.test/rallies/portugal-2025/service-cover.jpg",
     coverImageR2Key: "rallies/portugal-2025/service-cover.jpg",
+    visibility: "public",
     sortOrder: 20,
     createdById: admin.id,
   });
@@ -282,6 +285,7 @@ async function main() {
     title: "Onboard and YouTube videos",
     description: "Unlisted video links and saved thumbnails for later playback.",
     albumDate: "2024-01-27",
+    visibility: "public",
     sortOrder: 10,
     createdById: admin.id,
   });

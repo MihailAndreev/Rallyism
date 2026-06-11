@@ -357,6 +357,11 @@ export default async function AlbumPage({
         <div className="space-y-5 p-6 sm:p-8">
           <div>
             <p className="text-sm font-semibold uppercase text-rally-blue">Album</p>
+            {canManageEvent && album.effectiveVisibility === "private" ? (
+              <span className="mt-3 inline-flex rounded-md border border-zinc-300 bg-zinc-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-zinc-600">
+                Private
+              </span>
+            ) : null}
             <h1 className="mt-3 text-4xl font-semibold tracking-normal text-zinc-950">
               {album.title}
             </h1>

@@ -1,14 +1,22 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import {
+  eventSupportsAlbumVisibilityControl,
+  getDefaultAlbumVisibilityForEvent,
+} from "@/lib/rally-events/album-visibility";
 import { formatDateForDisplay } from "@/services/rally-events";
-import type { RallyEventAlbum } from "@/services/rally-events";
+import type {
+  RallyEventAlbum,
+  RallyEventVisibility,
+} from "@/services/rally-events";
 
 type AlbumFormProps = {
   action: (formData: FormData) => void | Promise<void>;
   album?: RallyEventAlbum;
   albumId?: number;
   rallyEventId: number;
+  eventVisibility: RallyEventVisibility;
   deleteAction?: (formData: FormData) => void | Promise<void>;
   error?: string;
   submitLabel: string;
@@ -40,11 +48,16 @@ export function AlbumForm({
   album,
   albumId,
   rallyEventId,
+  eventVisibility,
   deleteAction,
   error,
   submitLabel,
   cancelHref,
 }: AlbumFormProps) {
+  const showVisibilityControl = eventSupportsAlbumVisibilityControl(eventVisibility);
+  const defaultVisibility =
+    album?.visibility ?? getDefaultAlbumVisibilityForEvent(eventVisibility);
+
   return (
     <div className="space-y-6">
       <form action={action} className="space-y-6">
@@ -105,6 +118,23 @@ export function AlbumForm({
             name="description"
           />
         </Field>
+
+        {showVisibilityControl ? (
+          <Field label="Album visibility">
+            <select
+              className={inputClass}
+              defaultValue={defaultVisibility}
+              name="visibility"
+            >
+              <option value="public">Public</option>
+              <option value="private">Private</option>
+            </select>
+          </Field>
+        ) : (
+          <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
+            This event is private, so this album automatically stays private.
+          </div>
+        )}
 
         <div className="flex flex-col gap-3 sm:flex-row">
           <button

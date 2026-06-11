@@ -58,9 +58,9 @@ export function RallyEventHeader({
             {event.title}
           </h1>
           <div className="mt-3 flex flex-wrap gap-2">
-            {details.map((detail) => (
+            {details.map((detail, index) => (
               <span
-                key={String(detail)}
+                key={`${index}-${String(detail)}`}
                 className="rounded-md border border-rally-orange-border bg-white px-2.5 py-1 text-xs font-medium text-zinc-700"
               >
                 {detail}

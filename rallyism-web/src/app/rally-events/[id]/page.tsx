@@ -116,7 +116,11 @@ export default async function RallyEventPage({ params }: RallyEventPageProps) {
                 }
               >
                 {albums.map((album) => (
-                  <AlbumCard key={album.id} album={album} />
+                  <AlbumCard
+                    key={album.id}
+                    album={album}
+                    showPrivateIndicator={canManageEvent}
+                  />
                 ))}
               </div>
             ) : (

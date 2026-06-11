@@ -16,6 +16,7 @@ function getFormInput(formData: FormData) {
     description: String(formData.get("description") ?? ""),
     albumDate: String(formData.get("albumDate") ?? ""),
     coverImageUrl: String(formData.get("coverImageUrl") ?? ""),
+    visibility: String(formData.get("visibility") ?? ""),
     sortOrder: String(formData.get("sortOrder") ?? ""),
   };
 }
